@@ -1,4 +1,4 @@
-import yaml from 'js-yaml'
+import { load as yamlLoad } from 'js-yaml'
 import { parseKey, parseScoreBlock, parseTime } from '../score/format.ts'
 import type { Score } from '../score/model.ts'
 
@@ -17,7 +17,7 @@ export interface Exercise {
 export function parseExercise(id: string, md: string): Exercise {
   const fm = /^---\n([\s\S]*?)\n---\n?/.exec(md)
   if (!fm) throw new Error(`${id}: missing front matter`)
-  const meta = yaml.load(fm[1]) as Record<string, unknown>
+  const meta = yamlLoad(fm[1]) as Record<string, unknown>
   const body = md.slice(fm[0].length)
   const sb = /```score\n([\s\S]*?)```/.exec(body)
   if (!sb) throw new Error(`${id}: missing score block`)
@@ -30,8 +30,3 @@ export function parseExercise(id: string, md: string): Exercise {
   }
 }
 
-// Vite: bundle every exercise file as raw text
-const files = import.meta.glob('../../exercises/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
-export const EXERCISES: Exercise[] = Object.entries(files)
-  .map(([path, md]) => parseExercise(path.split('/').pop()!.replace(/\.md$/, ''), md))
-  .sort((a, b) => a.id.localeCompare(b.id))

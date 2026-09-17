@@ -1,111 +1,58 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
+:root { font-family: system-ui, sans-serif; font-size: 14px; color: #222; background: #f6f6f4; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.app { display: flex; flex-direction: column; height: 100vh; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; }
+header h1 { font-size: 16px; margin: 0 12px 0 0; }
+header .sep { width: 1px; height: 22px; background: #ddd; margin: 0 4px; }
+header label { display: inline-flex; align-items: center; gap: 4px; }
+button { font: inherit; padding: 4px 10px; border: 1px solid #bbb; border-radius: 4px; background: #fafafa; cursor: pointer; }
+button.primary { background: #2d6cdf; color: #fff; border-color: #2d6cdf; }
+button:disabled { opacity: .5; cursor: default; }
+.status { margin-left: auto; font-variant: small-caps; color: #666; }
+.status.running { color: #2d6cdf; } .status.done { color: #1a8a3a; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 12px; padding: 12px; overflow: auto; flex: 1; }
+section.left, section.right { min-width: 0; }
+.instructions { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; }
+.instructions p { margin: 6px 0 0; color: #444; }
+.score { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 8px; }
+.score svg .placed { fill: #2d6cdf; stroke: #2d6cdf; }
+.score svg .just-placed { fill: #e0501b; stroke: #e0501b; }
+.score svg .target { fill: #b07d00; stroke: #b07d00; }
+.player { margin: 6px 0; }
+pre { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 8px; overflow: auto; font-size: 12px; white-space: pre; }
+details summary { cursor: pointer; color: #555; margin: 6px 0; }
+.controller { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 10px; }
+.steps { display: flex; gap: 4px; margin-bottom: 10px; }
+.stepchip { flex: 1; border: 1px solid #ddd; border-radius: 4px; padding: 4px; text-align: center; background: #f4f4f4; }
+.stepchip.active { border-color: #2d6cdf; background: #eaf1ff; }
+.stepchip.done { background: #eef8ee; }
+.steptitle { font-size: 9px; letter-spacing: .05em; color: #777; }
+.stepval { font-weight: 600; font-size: 12px; }
+.options { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt { position: relative; min-width: 80px; text-align: left; overflow: hidden; padding: 6px 8px; background: #fafafa; }
+.opt .optkey { position: relative; z-index: 1; font-weight: 600; }
+.opt .pct { position: relative; z-index: 1; float: right; color: #666; font-size: 11px; }
+.opt .bar { position: absolute; left: 0; top: 0; bottom: 0; background: #cfe0ff; }
+.opt.chosen { border-color: #e0501b; box-shadow: 0 0 0 2px #e0501b inset; }
+.opt:disabled { opacity: 1; cursor: default; }
+.options.piano .opt { min-width: 60px; }
+.options.piano .opt.black { background: #333; color: #fff; }
+.options.piano .opt.black .bar { background: #5a7bd0; }
+.options.piano .opt.black .pct { color: #ddd; }
+.lastanswer { margin: 8px 0; color: #444; }
+.turnlog { max-height: 45vh; overflow: auto; font-size: 12px; }
+.turn { padding: 4px 6px; border-bottom: 1px solid #eee; }
+.turn.stopped { color: #1a8a3a; font-weight: 600; }
+.turn .conf { color: #999; margin-left: 6px; }
+h3 { font-size: 13px; margin: 12px 0 4px; }
+.ctlstatus { margin: 4px 0 8px; color: #444; }
+.ctlstatus .thinking { color: #2d6cdf; }
+.piano { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; }
+.piano .blackpair { display: flex; flex-direction: column; gap: 3px; }
+.piano .opt { width: 100%; min-width: 0; padding: 6px 4px; font-size: 11px; }
+.piano .opt.black { background: #333; color: #fff; }
+.piano .opt.black .bar { background: #5a7bd0; }
+.piano .opt.black .pct { color: #ddd; }
+.piano .opt.white { padding: 14px 4px; }
+.piano .opt.odd { background: #eee; color: #777; }
