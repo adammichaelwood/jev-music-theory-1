@@ -10,6 +10,8 @@ import { type JevState, buildFanoutQuestion, buildQuestion, buildState } from '.
 import { CONTROLLER_DURS, OCTAVES, PITCHES, beatLabel } from '@core/controller/options.ts'
 import { VOICES, VOICE_LABEL, beatsPerBar, durBeats, isLocked, noteEnd } from '@core/score/model.ts'
 import { pitchText, serializeScoreBlock } from '@core/formats/csv.ts'
+import { codeLocation } from '@core/controller/policy.ts'
+import { isComplete } from '@core/score/model.ts'
 
 export interface StepRecord {
   step: Step
@@ -68,8 +70,17 @@ export async function* runLoop(decider: Decider, ex: Exercise, start: Score, opt
   for (let n = 1; n <= max; n++) {
     const turn: Turn = {}
     const steps: StepRecord[] = []
+    if (opts.condition.location === 'code') { // code picks where (and how long); the model picks only the note; done when complete
+      if (isComplete(score)) return
+      const loc = codeLocation(score, opts.condition.strategy === 'backward' ? 'backward' : 'forward')
+      if (!loc) return
+      const { duration, ...where } = loc
+      Object.assign(turn, where)
+      ;(turn as Turn & { _dur?: typeof duration })._dur = duration
+    }
     for (;;) {
       const o = optionsFor(score, turn, opts.condition)
+      if (o?.step === 'duration' && (turn as Turn & { _dur?: Turn['duration'] })._dur) { turn.duration = (turn as Turn & { _dur?: Turn['duration'] })._dur; continue }
       if (!o) break
       const state = buildState(ex, score, turn, opts.condition, opts.condition.feedback ? feedbackFor(score) : undefined, recent)
       const q = buildQuestion(o.step, o.options, opts.condition)

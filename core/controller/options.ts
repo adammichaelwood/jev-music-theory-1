@@ -1,4 +1,5 @@
 import { pitchText, type FormatVariant } from '@core/formats/csv.ts'
+import { filterPitches } from '@core/controller/policy.ts'
 import {
   type Acc, type Dur, type Letter, type Note, type Score, type VoiceName, VOICES, VOICE_LABEL, LETTERS,
   beatsPerBar, durBeats, gaps, isComplete, isLocked, noteEnd,
@@ -26,6 +27,7 @@ export interface Option {
 export interface ControllerOpts extends FormatVariant {
   strategy?: 'free' | 'forward' | 'backward' | 'line'
   pitchOctave?: 'split' | 'merged'
+  options?: 'all' | 'diatonic' | 'chord-tones'
 }
 
 export const CONTROLLER_DURS: Dur[] = ['EIGHTH', 'QUARTER', 'DOTTED-QUARTER', 'HALF', 'DOTTED-HALF', 'WHOLE']
@@ -102,10 +104,12 @@ export function optionsFor(s: Score, t: Turn, o: ControllerOpts): { step: Step; 
       const inFocus = (b: number) => !focus?.gap || focus.measure !== m || (b >= focus.gap[0] && b < focus.gap[1])
       return { step, options: positions.filter(b => beatFree(s, v, m, b) && inFocus(b)).map(b => ({ key: beatLabel(b), patch: { beat: b }, description: null })) }
     }
-    case 'pitch':
+    case 'pitch': {
+      const ps = filterPitches(o.options ?? 'all', s, t)
       if (o.pitchOctave === 'merged')
-        return { step, options: PITCHES.flatMap(p => OCTAVES.map(oc => ({ key: `${pitchText(p, o.accidentals)}-${oc}`, patch: { pitch: p, octave: oc }, description: null }))) }
-      return { step, options: PITCHES.map(p => ({ key: pitchText(p, o.accidentals), patch: { pitch: p }, description: null })) }
+        return { step, options: ps.flatMap(p => OCTAVES.map(oc => ({ key: `${pitchText(p, o.accidentals)}-${oc}`, patch: { pitch: p, octave: oc }, description: null }))) }
+      return { step, options: ps.map(p => ({ key: pitchText(p, o.accidentals), patch: { pitch: p }, description: null })) }
+    }
     case 'octave':
       return { step, options: OCTAVES.map(oc => ({
         key: `OCTAVE ${oc}`, patch: { octave: oc }, description: oc === 4 ? 'the octave starting at middle C' : null,

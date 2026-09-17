@@ -15,9 +15,13 @@ export interface Condition extends FormatVariant {
   context: 'full' | 'window' // score text: whole score, or current measure ±1 once a measure is chosen
   requests: 'sequential' | 'fanout' // six sub-steps in sequence (each sees earlier answers) or one request with all six
   history: number // how many recent moves are listed in state as `recent_moves` (0 = none; S5)
+  // step 4 (policy + framing)
+  location: 'model' | 'code' // who chooses voice/measure/beat/duration: the model (as before) or code (earliest gap, bass-first); the model then picks only pitch (+octave)
+  options: 'all' | 'diatonic' | 'chord-tones' // which pitch spellings are offered: all 21, those in the key, or members of the chord implied by figures / the other voices
+  framing: 'score' | 'slice' | 'narrative' // how the pitch decision is presented: the whole score, the surrounding beats as a table, or a prose description
 }
 
-export const BASELINE: Condition = { name: 'baseline', format: 'csv', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split', context: 'full', requests: 'sequential', history: 0 }
+export const BASELINE: Condition = { name: 'baseline', format: 'csv', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split', context: 'full', requests: 'sequential', history: 0, location: 'model', options: 'all', framing: 'score' }
 
 export const PRESETS: Condition[] = [
   BASELINE,
@@ -51,6 +55,15 @@ export const PRESETS: Condition[] = [
   { ...BASELINE, name: 'lilypond-backward', format: 'lilypond', strategy: 'backward' },
   { ...BASELINE, name: 'maximal-history', align: true, emptyCell: 'underscores', theory: 'detailed', history: 6 },
   { ...BASELINE, name: 'backward-history', strategy: 'backward', history: 6 },
+  // step 4: policy + framing (all with code-chosen location, so the model decides only the note)
+  { ...BASELINE, name: 'code-location', location: 'code' },
+  { ...BASELINE, name: 'code-diatonic', location: 'code', options: 'diatonic' },
+  { ...BASELINE, name: 'code-chord-tones', location: 'code', options: 'chord-tones' },
+  { ...BASELINE, name: 'slice', location: 'code', framing: 'slice' },
+  { ...BASELINE, name: 'narrative', location: 'code', framing: 'narrative' },
+  { ...BASELINE, name: 'narrative-chord-tones', location: 'code', framing: 'narrative', options: 'chord-tones' },
+  { ...BASELINE, name: 'slice-merged', location: 'code', framing: 'slice', pitchOctave: 'merged' },
+  { ...BASELINE, name: 'narrative-merged', location: 'code', framing: 'narrative', pitchOctave: 'merged' },
 ]
 export const presetByName = (n: string) => PRESETS.find(p => p.name === n) ?? BASELINE
 

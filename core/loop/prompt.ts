@@ -2,7 +2,8 @@ import { choice, type ChoiceQuestion } from '@typesafe-ai/sdk'
 import { type Option, type Step, type Turn, describeTurn } from '@core/controller/options.ts'
 import type { Exercise } from '@core/exercises/load.ts'
 import { FORMATS } from '@core/formats/index.ts'
-import { sliceScore, type Score } from '@core/score/model.ts'
+import { sliceScore, type Score, VOICES, VOICE_LABEL, noteAt, beatsPerBar } from '@core/score/model.ts'
+import { pitchText } from '@core/formats/csv.ts'
 import { type Condition, THEORY_DETAILED, THEORY_PRIMER } from './conditions.ts'
 
 import { TASK, TASK_FEEDBACK, TASK_HISTORY } from '@core/jev/task.ts'
@@ -13,8 +14,10 @@ export interface JevState {
   format_guide?: string
   theory_rules?: string
   exercise: { title: string; key: string; time_signature: string; instructions?: string }
-  score: string
+  score?: string
   score_window?: string
+  context?: Record<string, unknown> // framing: slice
+  situation?: string // framing: narrative
   recent_moves?: string[]
   feedback?: string[]
   current_turn: Record<string, string>
@@ -36,6 +39,21 @@ export function buildState(ex: Exercise, score: Score, turn: Turn, c: Condition,
     const from = Math.max(0, turn.measure - 1), to = Math.min(score.nMeasures - 1, turn.measure + 1)
     st.score = FORMATS[c.format].serialize(sliceScore(score, from, to), c)
     st.score_window = `\`score\` shows only measures ${from + 1} to ${to + 1} of ${score.nMeasures}; its first cell is measure ${from + 1}.`
+  }
+  // framing (step 4): once the location is known, replace the score with a slice table or a prose description
+  if (c.framing !== 'score' && turn.voice && turn.voice !== 'STOP' && turn.measure !== undefined && turn.beat !== undefined) {
+    const v = turn.voice, m = turn.measure, b = turn.beat, bar = beatsPerBar(score.time)
+    const at = (mm: number, bb: number) => Object.fromEntries(VOICES.map(x => { const n = noteAt(score, x, mm, bb); return [VOICE_LABEL[x].toLowerCase(), n ? (n.rest ? 'rest' : `${pitchText(n, c.accidentals)}${n.octave}`) : (x === v && mm === m && bb === b ? '?' : 'undecided')] }))
+    const prevAbs = m * bar + b - 1, nextAbs = m * bar + b + 1
+    const prev = prevAbs >= 0 ? at(Math.floor(prevAbs / bar), prevAbs % bar) : undefined
+    const next = nextAbs < score.nMeasures * bar ? at(Math.floor(nextAbs / bar), nextAbs % bar) : undefined
+    const here = at(m, b)
+    delete st.score; delete st.format_guide
+    if (c.framing === 'slice') st.context = { key: ex.keyText, time_signature: ex.timeText, previous_beat: prev, this_beat: here, next_beat: next, deciding: `the ${VOICE_LABEL[v].toLowerCase()} on this beat` }
+    else {
+      const say = (o: Record<string, string> | undefined, label: string) => o ? `${label}, ` + VOICES.map(x => `the ${VOICE_LABEL[x].toLowerCase()} ${o[VOICE_LABEL[x].toLowerCase()] === '?' ? 'is the note to decide' : o[VOICE_LABEL[x].toLowerCase()] === 'undecided' ? 'is not written yet' : `has ${o[VOICE_LABEL[x].toLowerCase()]}`}`).join(', ') + '.' : ''
+      st.situation = `The key is ${ex.keyText}, in ${ex.timeText}. ${say(prev, 'On the previous beat')} ${say(here, `On this beat (measure ${m + 1}, beat ${b + 1})`)} ${say(next, 'On the following beat')} Which pitch should the ${VOICE_LABEL[v].toLowerCase()} have on this beat?`.replace(/\s+/g, ' ')
+    }
   }
   for (const k of Object.keys(st) as (keyof JevState)[]) if (st[k] === undefined) delete st[k]
   if (st.exercise.instructions === undefined) delete st.exercise.instructions
