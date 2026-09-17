@@ -2,7 +2,7 @@ import { choice, type ChoiceQuestion } from '@typesafe-ai/sdk'
 import { type Option, type Step, type Turn, describeTurn } from '../controller/options.ts'
 import type { Exercise } from '../exercises/load.ts'
 import { type FormatVariant, serializeScoreBlock } from '../score/format.ts'
-import type { Score } from '../score/model.ts'
+import { sliceScore, type Score } from '../score/model.ts'
 import { type Condition, THEORY_DETAILED, THEORY_PRIMER } from './conditions.ts'
 
 /** How the score text is to be read. Sent inside the state on every request. */
@@ -30,6 +30,7 @@ export function formatGuide(v: FormatVariant, level: Condition['formatGuide'] = 
   ].filter(Boolean).join(' ')
 }
 
+export const TASK_HISTORY = ' `recent_moves` lists the notes you wrote most recently, oldest first.'
 export const TASK_FEEDBACK = ' `feedback` lists the problems a grader currently finds in `score`; fix them.'
 export const TASK = 'You are completing an undergraduate music-theory exercise in four-part (SATB) common-practice harmony. You edit the score one note at a time using a controller: choose a voice, a measure, a beat, a pitch, an octave and a duration. The note you write replaces anything you previously wrote at that place in that voice. Notes given by the exercise cannot be changed. The score already contains everything decided so far.'
 
@@ -39,19 +40,28 @@ export interface JevState {
   theory_rules?: string
   exercise: { title: string; key: string; time_signature: string; instructions?: string }
   score: string
+  score_window?: string
+  recent_moves?: string[]
   feedback?: string[]
   current_turn: Record<string, string>
 }
 
-export function buildState(ex: Exercise, score: Score, turn: Turn, c: Condition, feedback?: string[]): JevState {
+export function buildState(ex: Exercise, score: Score, turn: Turn, c: Condition, feedback?: string[], recentMoves?: string[]): JevState {
   const st: JevState = {
-    task: TASK + (c.feedback ? TASK_FEEDBACK : ''),
+    task: TASK + (c.feedback ? TASK_FEEDBACK : '') + (c.history > 0 ? TASK_HISTORY : ''),
     format_guide: formatGuide(c, c.formatGuide),
     theory_rules: c.theory === 'primer' ? THEORY_PRIMER : c.theory === 'detailed' ? THEORY_DETAILED : undefined,
     exercise: { title: ex.title, key: ex.keyText, time_signature: ex.timeText, instructions: c.theory === 'none' ? undefined : ex.instructions },
     score: serializeScoreBlock(score, c),
+    score_window: undefined,
+    recent_moves: c.history > 0 && recentMoves?.length ? recentMoves.slice(-c.history) : undefined,
     feedback,
     current_turn: describeTurn(turn, c),
+  }
+  if (c.context === 'window' && turn.measure !== undefined) {
+    const from = Math.max(0, turn.measure - 1), to = Math.min(score.nMeasures - 1, turn.measure + 1)
+    st.score = serializeScoreBlock(sliceScore(score, from, to), c)
+    st.score_window = `\`score\` shows only measures ${from + 1} to ${to + 1} of ${score.nMeasures}; its first cell is measure ${from + 1}.`
   }
   for (const k of Object.keys(st) as (keyof JevState)[]) if (st[k] === undefined) delete st[k]
   if (st.exercise.instructions === undefined) delete st.exercise.instructions
@@ -73,6 +83,20 @@ const PLAIN: Record<Step, string> = {
   pitch: 'Which pitch?',
   octave: 'Which octave?',
   duration: 'Which duration?',
+}
+
+const FANOUT: Record<Step, string> = {
+  voice: 'Read `exercise` and the current `score`. In which voice should the next note be written or changed? Choose STOP only if every voice is complete with no undecided beats and the part-writing is correct.',
+  measure: 'In which measure of `score` should the next note be written or changed?',
+  beat: 'On which beat of that measure should the next note begin?',
+  pitch: 'Which pitch should the next note be, given the key `exercise.key` and the other voices?',
+  octave: 'In which octave should the next note be, so it sits in the range of its voice between the neighboring voices?',
+  duration: 'How long should the next note be?',
+}
+export function buildFanoutQuestion(step: Step, options: Option[]): ChoiceQuestion {
+  const criteria: Record<string, string | null> = {}
+  for (const o of options) criteria[o.key] = o.description
+  return choice(FANOUT[step], criteria)
 }
 
 export function buildQuestion(step: Step, options: Option[], c: Condition): ChoiceQuestion {

@@ -69,6 +69,10 @@ export default function App() {
         } else if (ev.type === 'move') {
           setScore(ev.score); setTurns(t => [...t, ev.rec]); setPartial({}); setStepHistory([]); setLastStep(undefined)
           setHighlights([{ v: ev.rec.turn.voice as VoiceName, m: ev.rec.turn.measure!, onset: ev.rec.note!.onset, cls: 'just-placed' }])
+        } else if (ev.type === 'invalid') {
+          setTurns(t => [...t, ev.rec]); setPartial({}); setStepHistory([]); setLastStep(undefined)
+        } else if (ev.type === 'stalled') {
+          setError('stalled: same score state three times'); setRun('done'); return
         } else if (ev.type === 'stop') {
           setTurns(t => [...t, ev.rec]); setPartial({}); setStepHistory([]); setRun('done'); return
         } else { setError('hit max turns without STOP'); setRun('done'); return }
@@ -129,6 +133,9 @@ export default function App() {
         <label>theory <select value={cond.theory} onChange={e => setCond(c => ({ ...c, name: 'custom', theory: e.target.value as Condition['theory'] }))}>{['none', 'exercise', 'primer', 'detailed'].map(x => <option key={x}>{x}</option>)}</select></label>
         <label>strategy <select value={cond.strategy} onChange={e => setCond(c => ({ ...c, name: 'custom', strategy: e.target.value as Condition['strategy'] }))}>{['free', 'forward', 'backward', 'line'].map(x => <option key={x}>{x}</option>)}</select></label>
         <label><input type="checkbox" checked={cond.feedback} onChange={e => setCond(c => ({ ...c, name: 'custom', feedback: e.target.checked }))} /> feedback</label>
+        <label>history <input type="number" min={0} max={20} value={cond.history} style={{ width: 40 }} onChange={e => setCond(c => ({ ...c, name: 'custom', history: +e.target.value }))} /></label>
+        <label><input type="checkbox" checked={cond.context === 'window'} onChange={e => setCond(c => ({ ...c, name: 'custom', context: e.target.checked ? 'window' : 'full' }))} /> windowed</label>
+        <label><input type="checkbox" checked={cond.requests === 'fanout'} onChange={e => setCond(c => ({ ...c, name: 'custom', requests: e.target.checked ? 'fanout' : 'sequential' }))} /> fanout</label>
         <label><input type="checkbox" checked={cond.pitchOctave === 'merged'} onChange={e => setCond(c => ({ ...c, name: 'custom', pitchOctave: e.target.checked ? 'merged' : 'split' }))} /> pitch+octave</label>
         <label>wording <select value={cond.stepWording} onChange={e => setCond(c => ({ ...c, name: 'custom', stepWording: e.target.value as Condition['stepWording'] }))}>{['plain', 'contextual'].map(x => <option key={x}>{x}</option>)}</select></label>
         <span className={`status ${run}`}>{run}{error ? ` — ${error}` : ''}</span>

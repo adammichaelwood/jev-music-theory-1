@@ -10,9 +10,12 @@ export interface Condition extends FormatVariant {
   strategy: 'free' | 'forward' | 'backward' | 'line'
   feedback: boolean // grader issues placed in state after every move
   pitchOctave: 'split' | 'merged' // one Choice for pitch+octave instead of two
+  context: 'full' | 'window' // score text: whole score, or current measure ±1 once a measure is chosen
+  requests: 'sequential' | 'fanout' // six sub-steps in sequence (each sees earlier answers) or one request with all six
+  history: number // how many recent moves are listed in state as `recent_moves` (0 = none; S5)
 }
 
-export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split' }
+export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split', context: 'full', requests: 'sequential', history: 0 }
 
 export const PRESETS: Condition[] = [
   BASELINE,
@@ -35,6 +38,12 @@ export const PRESETS: Condition[] = [
   { ...BASELINE, name: 'feedback', feedback: true },
   { ...BASELINE, name: 'merged-pitch', pitchOctave: 'merged' },
   { ...BASELINE, name: 'forward-feedback', strategy: 'forward', feedback: true },
+  { ...BASELINE, name: 'windowed', context: 'window' },
+  { ...BASELINE, name: 'fanout', requests: 'fanout' },
+  { ...BASELINE, name: 'maximal-merged', align: true, emptyCell: 'underscores', theory: 'detailed', pitchOctave: 'merged' },
+  { ...BASELINE, name: 'history', history: 6 },
+  { ...BASELINE, name: 'maximal-history', align: true, emptyCell: 'underscores', theory: 'detailed', history: 6 },
+  { ...BASELINE, name: 'backward-history', strategy: 'backward', history: 6 },
 ]
 export const presetByName = (n: string) => PRESETS.find(p => p.name === n) ?? BASELINE
 

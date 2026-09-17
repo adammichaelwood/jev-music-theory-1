@@ -12,5 +12,6 @@ export function makeClient(opts: { baseURL?: string; apiKey?: string } = {}) {
     defaultModel: MODEL,
     dangerouslyAllowBrowser: inBrowser,
     timeout: 30000,
+    retry: { maxRetries: 8, backoffInitialMs: 1000, backoffMaxMs: 30000 },
   })
 }

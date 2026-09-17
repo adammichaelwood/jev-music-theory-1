@@ -41,3 +41,29 @@ turns (the score itself is the history).
 ### S6. Termination safety.
 **Answer:** A per-run max-turn cap (default 150, adjustable) in addition to
 Jev's own STOP. A run that hits the cap is reported as "did not stop".
+
+### S7. Should I commit as I go?
+**Answer:** Yes — local commits per phase, nothing pushed. Autonomous mode
+implies it, and a per-phase history is the only sane way for either of us to
+find where something went wrong.
+
+### S8. Durations offered: your list was EIGHTH/QUARTER/HALF/WHOLE. Dotted values?
+**Answer:** Also offer DOTTED-QUARTER and DOTTED-HALF (when they fit). A 3/4
+cadence needs a dotted half; without it Jev has no way to write one and we'd
+be measuring the controller, not the model.
+
+### S9. Chorale excerpts start with a pickup and end mid-bar. Support pickups in the format?
+**Answer:** No format change: pad the pickup bar and the final bar with
+*given rests* in every voice (`REST-HALF`). Rests are ordinary notation, the
+parser already reads them, and the alternative (variable bar lengths) touches
+every module.
+
+### S10. The `feedback` strategy loops: Jev rewrites the same note at the first-listed problem forever. Add a loop breaker?
+**Answer:** No. A loop breaker would be code steering the model; the loop
+*is* the finding (literal reading + no memory of its own failed attempts).
+Cap the run, record it. A variant that lists issues in a different order or
+names the offending voice more directly is a legitimate future condition.
+
+### S11. Matrix was going to take 5+ hours sequentially.
+**Answer:** Run jobs in parallel (8 workers) with `--resume` so a killed
+matrix continues from the ledger. Rate limits (1,200 rpm) are far away.

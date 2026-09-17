@@ -112,3 +112,13 @@ export const letterIndex = (l: Letter) => LETTERS.indexOf(l)
 /** diatonic steps between two pitches (positive = up) */
 export const diatonicSteps = (a: Pick<Note, 'letter' | 'octave'>, b: Pick<Note, 'letter' | 'octave'>) =>
   (b.octave * 7 + letterIndex(b.letter)) - (a.octave * 7 + letterIndex(a.letter))
+
+/** a copy containing only measures [from, to] (inclusive); locked keys are renumbered */
+export function sliceScore(s: Score, from: number, to: number): Score {
+  const out = emptyScore(s.key, s.time, to - from + 1)
+  for (const v of VOICES) for (let m = from; m <= to; m++) {
+    out.voices[v][m - from] = s.voices[v][m].map(n => ({ ...n }))
+    for (const n of s.voices[v][m]) if (isLocked(s, v, m, n.onset)) out.locked.add(lockKey(v, m - from, n.onset))
+  }
+  return out
+}

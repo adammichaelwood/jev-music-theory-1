@@ -55,7 +55,7 @@ export function scoreToAbc(s: Score, title = ''): AbcOut {
   const refs = new Map<number, NoteRef>()
   const header = [
     'X:1', title ? `T:${title}` : null, `M:${s.time.num}/${s.time.den}`, 'L:1/16', 'Q:1/4=72', `K:${abcKeyName(s)}`,
-    '%%score (S A) (T B)', '%%stretchlast 1',
+    '%%score (S A) (T B)', '%%stretchlast 1', '%%barsperstaff 4',
     ...VOICES.map(v => `V:${v} clef=${CLEF[v]}`),
   ].filter(Boolean).join('\n') + '\n'
   let abc = header
