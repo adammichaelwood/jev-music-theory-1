@@ -13,8 +13,10 @@ runs exercises × prompt conditions × strategies × repeats into a ledger.
 
 **Live demo:** https://adammichaelwood.com/jev-music-theory-1/
 
-**Findings:** [`_plan/findings.md`](_plan/findings.md) (also the *findings*
-tab in the app). Numbers: [`_plan/results.md`](_plan/results.md).
+**Findings:** round 1 [`_plan/findings.md`](_plan/findings.md) (also the *findings*
+tab in the app); round 2 — formats, theory quiz, Claude vs Jev, framings —
+[`_plan/findings-2.md`](_plan/findings-2.md). Numbers: [`_plan/results.md`](_plan/results.md),
+[`_plan/quiz-results.md`](_plan/quiz-results.md).
 Design and decision log: [`_plan/main.md`](_plan/main.md).
 
 ## Run it
@@ -56,11 +58,13 @@ Then in the GitHub repo: *Settings → Pages → Source: GitHub Actions*, and
 *Settings → Secrets and variables → Actions → Variables*: `VITE_API_BASE` = the
 Worker URL. Every push to `main` deploys via `.github/workflows/pages.yml`.
 
-## Headless harness
+## Headless experiments
 
 ```sh
-npx tsx scripts/run.ts --ex 001,002 --cond baseline,backward --repeats 3 --jobs 3
-npx tsx scripts/report.ts       # regenerates _plan/results.md from runs/index.jsonl
+npx tsx experiments/lab/run.ts --ex 001,002 --cond baseline,slice --decider jev,claude-sonnet --repeats 3 --jobs 3
+npx tsx core/harness/report.ts          # regenerates _plan/results.md from runs/index.jsonl
+npx tsx experiments/quiz/run.ts --decider jev,claude-haiku --per 8 && npx tsx experiments/quiz/report.ts
+npx tsx experiments/oneshot/run.ts --ex 001 --model claude-sonnet --format csv
 npx tsx scripts/grade.ts runs/<file>.json
 npx tsx scripts/kern2ex.ts chor001.krn --phrases 1 --given S,B --id 020   # Bach chorale → exercise
 npx tsx scripts/record.ts video && python3 scripts/mixaudio.py video <piano-samples-dir>   # demo video (Playwright + ffmpeg)

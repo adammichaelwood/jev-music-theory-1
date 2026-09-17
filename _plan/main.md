@@ -4,7 +4,7 @@ Living document. What the app is, decisions made (with who made them), and
 what's open. Build order: `build.md`. Jev/TypeSafe constraints: `jev-notes.md`.
 Self-answered design questions during autonomous work: `self-answered.md`.
 
-Status: **built; experiments concluded 2026-09-17** at your request. App is demo-ready; write-up in `findings.md`, numbers in `results.md`.
+Status: round 1 concluded 2026-09-17 (`findings.md`, `results.md`); **round 2** (formats, quiz, LLM comparison, policies/framings) in progress — see `build.md` §Round 2 and `findings-2.md`.
 
 ---
 

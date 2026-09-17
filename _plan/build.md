@@ -88,3 +88,14 @@ output, `_plan/` for these docs.
 
 ## Phase 9 — Demo polish (2026-09-17)
 - [x] Dark theme, piano keys with probability fill, glow on chosen option, violation coloring on the score, live cost/token stats, expandable turns, findings tab, about panel, experiment levers behind a toggle.
+
+## Round 2 (2026-09-17, after the demo)
+
+Restructured into `core/` (library), `src/` (app), `experiments/` (headless
+runners), `scripts/` (tools). Path alias `@core/*`.
+
+- [x] Step 1 — `ScoreFormat` seam (`core/formats/index.ts`): CSV, ABC, LilyPond plugins; `Condition.format`. Matrix: 4 exercises × {csv, abc, lilypond} × {free, backward} × 3.
+- [x] Step 2 — Generated theory quiz (`core/quiz/generate.ts`, 19 kinds / 5 tiers, answers computed by code); `experiments/quiz/run.ts` + `report.ts` → `_plan/quiz-results.md`. Run on Jev + 3 Claude tiers.
+- [x] Step 3 — `Decider` abstraction (`core/decide/`): Jev and Claude (Haiku 4.5 / Sonnet 5 / Opus 5, structured-output choice, low effort in per-step mode). Claude in the controller loop (`--decider`), and one-shot generation (`experiments/oneshot/run.ts`, CSV and LilyPond output parsed and graded).
+- [x] Step 4 — `Condition.location` (code-chosen location, model picks the note), `Condition.options` (all / diatonic / chord-tones), `Condition.framing` (score / slice / narrative). `core/controller/policy.ts`.
+- [x] Write-up: `_plan/findings-2.md`.
