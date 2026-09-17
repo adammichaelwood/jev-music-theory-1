@@ -19,7 +19,7 @@ export function ScoreView({ score, title, highlights = [], onTune }: Props) {
   useEffect(() => {
     if (!ref.current) return
     const { abc, refs } = scoreToAbc(score, title)
-    const [tune] = abcjs.renderAbc(ref.current, abc, { add_classes: true, responsive: 'resize', staffwidth: 900 })
+    const [tune] = abcjs.renderAbc(ref.current, abc, { add_classes: true, foregroundColor: '#e6e9f0', staffwidth: Math.max(320, ref.current.clientWidth - 40), scale: 1.05, paddingleft: 8, paddingright: 8 })
     // walk rendered elements, map back to our notes via startChar
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const line of (tune as any).lines ?? []) for (const staff of line.staff ?? []) for (const voice of staff.voices ?? []) for (const el of voice) {

@@ -4,7 +4,7 @@ Living document. What the app is, decisions made (with who made them), and
 what's open. Build order: `build.md`. Jev/TypeSafe constraints: `jev-notes.md`.
 Self-answered design questions during autonomous work: `self-answered.md`.
 
-Status: **design settled enough to build** (2026-09-17). Awaiting API key + "go".
+Status: **built; experiments concluded 2026-09-17** at your request. App is demo-ready; write-up in `findings.md`, numbers in `results.md`.
 
 ---
 

@@ -71,15 +71,18 @@ output, `_plan/` for these docs.
       condition: mean errors/warnings, chord-tone rate, stop rate, turns, cost).
 - [x] Grow `exercises/` into a graded series (easy → advanced): `scripts/kern2ex.ts`
       converts Bach chorales (Humdrum kern, craigsapp/bach-370-chorales) — 8 added, levels 2–5.
-- [ ] First results write-up in `_plan/results.md`.
+- [x] Results: `_plan/results.md` (generated) + `_plan/findings.md` (narrative, also in-app).
 
 ## Phase 8 — Strategies (pilots → matrix)
 - [x] `strategy`, `feedback`, `pitchOctave` fields on Condition; option filtering in
       `controller/options.ts`; feedback injection in `jev/turn.ts`.
 - [x] `errorsAtFirstComplete` in the ledger (revision effect).
-- [ ] Pilot: each strategy × 3 exercises × 2 repeats; promote the promising ones.
-- [ ] `merged-pitch`, `windowed`, `fanout` as time allows.
+- [x] Pilots + matrix: 228 runs across 22 conditions; round two on chorales stopped at your request.
+- [x] `merged-pitch`, `windowed`, `fanout`, `history` implemented; `windowed` only piloted (n=1).
 
 ## Later / deployment
 - Cloudflare Worker proxy + GH Pages build with user-entered key.
 - Fan-out variant of the turn (all sub-steps in one request).
+
+## Phase 9 — Demo polish (2026-09-17)
+- [x] Dark theme, piano keys with probability fill, glow on chosen option, violation coloring on the score, live cost/token stats, expandable turns, findings tab, about panel, experiment levers behind a toggle.

@@ -1,9 +1,6 @@
-import { useMemo } from 'react'
-import { grade } from '../grader/index.ts'
-import type { Score } from '../score/model.ts'
+import type { Report } from '../grader/index.ts'
 
-export function GradePanel({ score }: { score: Score }) {
-  const r = useMemo(() => grade(score), [score])
+export function GradePanel({ report: r }: { report: Report }) {
   return (
     <div className="grade">
       <div className="gradehead">

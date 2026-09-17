@@ -3,20 +3,19 @@ import type { StepRecord } from '../jev/turn.ts'
 import type { Acc, Letter } from '../score/model.ts'
 
 interface Props {
-  step: Step | null // step to be decided next
+  step: Step | null
   options: Option[]
   partialText: Record<string, string>
-  last?: StepRecord // most recent answer this turn (shown with probability bars while Jev "thinks" about the next step)
+  last?: StepRecord
   history: StepRecord[]
   humanMode: boolean
   thinking: boolean
   onPick?: (o: Option) => void
 }
 
-const STEP_TITLE: Record<Step, string> = { voice: 'WHICH VOICE', measure: 'WHICH MEASURE', beat: 'WHICH BEAT', pitch: 'WHAT PITCH', octave: 'WHICH OCTAVE', duration: 'WHAT DURATION' }
+const STEP_TITLE: Record<Step, string> = { voice: 'VOICE', measure: 'MEASURE', beat: 'BEAT', pitch: 'PITCH', octave: 'OCTAVE', duration: 'DURATION' }
 
 export function Controller({ step, options, partialText, last, history, humanMode, thinking, onPick }: Props) {
-  // In Jev mode show the answered step (with its distribution); in human mode show the live step.
   const showLast = !humanMode && last
   const shownStep = showLast ? last.step : step
   const shownOptions = showLast ? last.options : options
@@ -28,15 +27,16 @@ export function Controller({ step, options, partialText, last, history, humanMod
           return (
             <div key={s} className={`stepchip ${s === step ? 'active' : ''} ${h ? 'done' : ''}`}>
               <div className="steptitle">{STEP_TITLE[s]}</div>
-              <div className="stepval">{partialText[s] ?? (h ? h.choice : '—')}</div>
+              <div className="stepval">{partialText[s] ?? (h ? h.choice : '·')}</div>
             </div>
           )
         })}
       </div>
       <div className="ctlstatus">
-        {shownStep ? <b>{STEP_TITLE[shownStep]}</b> : <b>—</b>}
-        {showLast && <span> → {last.choice} · confidence {last.confidence.toFixed(2)} · {last.ms}ms</span>}
-        {thinking && !humanMode && <span className="thinking"> · deciding {step ? STEP_TITLE[step].toLowerCase() : ''}…</span>}
+        <span className="ctlstep">{shownStep ? STEP_TITLE[shownStep] : '—'}</span>
+        {showLast && <span className="ctlanswer"> → <b>{last.choice}</b> <span className="dim">conf {last.confidence.toFixed(2)} · {last.ms} ms</span></span>}
+        {thinking && !humanMode && <span className="thinking">{step ? `deciding ${STEP_TITLE[step].toLowerCase()}` : 'applying'}<span className="dots" /></span>}
+        {humanMode && <span className="dim"> · your move</span>}
       </div>
       {shownStep === 'pitch' && shownOptions.length === 21
         ? <Piano options={shownOptions} last={showLast ? last : undefined} humanMode={humanMode} onPick={onPick} />
@@ -53,34 +53,50 @@ function OptButton({ o, last, humanMode, onPick, className = '' }: { o: Option; 
   const p = last?.probabilities[o.key]
   const chosen = last?.choice === o.key
   return (
-    <button className={`opt ${chosen ? 'chosen' : ''} ${className}`} title={o.description ?? undefined} disabled={!humanMode} onClick={() => onPick?.(o)}>
+    <button className={`opt ${chosen ? 'chosen' : ''} ${className}`} title={o.description ?? undefined} disabled={!humanMode} onClick={() => onPick?.(o)}
+      style={p !== undefined ? { '--p': p } as React.CSSProperties : undefined}>
+      <span className="bar" />
       <span className="optkey">{o.key}</span>
-      {p !== undefined && <span className="bar" style={{ width: `${Math.round(p * 100)}%` }} />}
       {p !== undefined && <span className="pct">{(p * 100).toFixed(0)}%</span>}
     </button>
   )
 }
 
-// piano: black keys (sharp over flat) above, white keys, then the odd spellings (B#, Cb, E#, Fb) under the key they sound as
 const WHITE: Letter[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const BLACK: [Letter, Letter][] = [['C', 'D'], ['D', 'E'], ['F', 'G'], ['G', 'A'], ['A', 'B']]
-const ODD: Record<string, Letter> = { 'B:sharp': 'C', 'C:flat': 'B', 'E:sharp': 'F', 'F:flat': 'E' }
+const ODD: [Letter, Acc, Letter][] = [['B', 'sharp', 'C'], ['F', 'flat', 'E'], ['E', 'sharp', 'F'], ['C', 'flat', 'B']]
+const glyph = (l: Letter, a: Acc) => l + (a === 'sharp' ? '♯' : a === 'flat' ? '♭' : '')
+
+/** a piano octave: white keys, black keys split into sharp (left) and flat (right) spellings, odd spellings underneath */
 function Piano({ options, last, humanMode, onPick }: { options: Option[]; last?: StepRecord; humanMode: boolean; onPick?: (o: Option) => void }) {
   const find = (letter: Letter, acc: Acc) => options.find(o => o.patch.pitch?.letter === letter && o.patch.pitch?.acc === acc)!
-  const col = (l: Letter) => WHITE.indexOf(l) * 2 + 1
+  const Key = ({ letter, acc, cls }: { letter: Letter; acc: Acc; cls: string }) => {
+    const o = find(letter, acc), p = last?.probabilities[o.key], chosen = last?.choice === o.key
+    return (
+      <button className={`key ${cls} ${chosen ? 'chosen' : ''}`} disabled={!humanMode} onClick={() => onPick?.(o)} title={o.key}
+        style={p !== undefined ? { '--p': p } as React.CSSProperties : undefined}>
+        <span className="fill" />
+        <span className="name">{glyph(letter, acc)}</span>
+        {p !== undefined && <span className="pct">{(p * 100).toFixed(0)}</span>}
+      </button>
+    )
+  }
   return (
-    <div className="piano">
-      {BLACK.map(([lo, hi]) => (
-        <div key={lo} className="blackpair" style={{ gridColumn: `${col(lo) + 1} / span 2`, gridRow: 1 }}>
-          <OptButton o={find(lo, 'sharp')} last={last} humanMode={humanMode} onPick={onPick} className="black" />
-          <OptButton o={find(hi, 'flat')} last={last} humanMode={humanMode} onPick={onPick} className="black" />
-        </div>
-      ))}
-      {WHITE.map(l => <div key={l} style={{ gridColumn: `${col(l)} / span 2`, gridRow: 2 }}><OptButton o={find(l, 'natural')} last={last} humanMode={humanMode} onPick={onPick} className="white" /></div>)}
-      {Object.entries(ODD).map(([k, under]) => {
-        const [letter, acc] = k.split(':') as [Letter, Acc]
-        return <div key={k} style={{ gridColumn: `${col(under)} / span 2`, gridRow: 3 }}><OptButton o={find(letter, acc)} last={last} humanMode={humanMode} onPick={onPick} className="odd" /></div>
-      })}
+    <div className="pianowrap">
+      <div className="piano">
+        {WHITE.map(l => <Key key={l} letter={l} acc="natural" cls="white" />)}
+        {BLACK.map(([lo, hi], i) => (
+          <div key={lo} className="blackpair" style={{ left: `calc(${(WHITE.indexOf(lo) + 1) * (100 / 7)}% - 7.5%)`, animationDelay: `${i * 40}ms` }}>
+            <Key letter={lo} acc="sharp" cls="black" />
+            <Key letter={hi} acc="flat" cls="black" />
+          </div>
+        ))}
+      </div>
+      <div className="oddrow">
+        {ODD.map(([l, a, under]) => (
+          <div key={l + a} style={{ gridColumn: WHITE.indexOf(under) + 1 }}><Key letter={l} acc={a} cls="odd" /></div>
+        ))}
+      </div>
     </div>
   )
 }
