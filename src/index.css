@@ -56,3 +56,10 @@ h3 { font-size: 13px; margin: 12px 0 4px; }
 .piano .opt.black .pct { color: #ddd; }
 .piano .opt.white { padding: 14px 4px; }
 .piano .opt.odd { background: #eee; color: #777; }
+.grade { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 8px 10px; font-size: 12px; }
+.grade .err { color: #c0392b; } .grade .warn { color: #b07d00; }
+.grade .chords span { display: inline-block; margin: 4px 6px 0 0; padding: 1px 6px; border-radius: 3px; background: #eef; font-family: serif; font-size: 14px; }
+.grade .chords span.bad { background: #fde3e0; }
+.grade ul { margin: 6px 0 0; padding-left: 16px; max-height: 20vh; overflow: auto; }
+.grade li.error { color: #c0392b; } .grade li.warn { color: #8a6d00; } .grade li.info { color: #777; }
+header select { font: inherit; }

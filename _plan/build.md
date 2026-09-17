@@ -63,8 +63,12 @@ output, `_plan/` for these docs.
       switches; model/API status; export run as JSON.
 
 ## Phase 7 — Harness & exercise library
-- [ ] `scripts/run.ts`: headless runs (exercise × variant × repeats) → `runs/`
-      with grader summary table.
+- [ ] `src/jev/conditions.ts`: Condition type + named presets; prompt.ts
+      builds task/format guide/theory primer/step wording from a condition.
+- [ ] `scripts/run.ts`: headless runs (exercise × condition × repeats) →
+      `runs/<run>.json` + append to `runs/index.jsonl` (ledger).
+- [ ] `scripts/report.ts`: ledger → `_plan/results.md` (table per exercise ×
+      condition: mean errors/warnings, chord-tone rate, stop rate, turns, cost).
 - [ ] Grow `exercises/` into a graded series (easy → advanced); mine
       public-domain chorale melodies online if practical.
 - [ ] First results write-up in `_plan/results.md`.

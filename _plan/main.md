@@ -89,15 +89,33 @@ handing to Jev.
 | H | Evaluation harness | Headless Node runner: N exercises × format variants → grader stats + full turn logs saved to `runs/`. This is how we answer the primary question. |
 | I | Deployment | Local only for now. Browser calls a relative `/api/systemone`; Vite dev server proxies to `api.typesafe.ai` and injects the key from `.env`. Nothing else in the app knows about keys, so a later Cloudflare Worker at the same path is a drop-in. |
 
-## 5. Experimental knobs (things we vary to draw out capability)
+## 5. Experiment matrix (added 2026-09-17 from your "btw" note)
 
-- Accidental spelling: `A-FLAT` vs `A♭`.
-- Column alignment of simultaneous notes across voice rows.
-- Wording of the format guide / examples in the prompt.
-- Amount of score context (full score always, per your instruction; a
-  windowed variant is a possible later experiment).
-- Sequential sub-steps (default) vs speculative fan-out (all sub-steps in one
-  request, without seeing earlier answers) — later, as a comparison.
+Each harness run is `exercise × condition × repeat`. A **condition** is one
+record naming every lever:
+
+| Lever | Levels |
+|-------|--------|
+| `accidentals` | `words` (`A-FLAT`) / `unicode` (`A♭`) |
+| `align` | columns aligned / not |
+| `formatGuide` | `none` / `brief` / `full` (with worked example) |
+| `theory` | `none` / `exercise` (only the exercise's own text) / `primer` (general SATB rules primer) / `detailed` (longer primer) |
+| `stepWording` | `plain` / `contextual` (question restates key, neighbours, etc.) |
+
+Cautions from the Jev docs: **context rot** — a long primer may *hurt*, so
+"more instruction" is a hypothesis to measure, not an assumed improvement.
+Token limits (64k total / 32k state+question) are far off; requests are
+~1.2–1.4k tokens today.
+
+Outputs: every run is graded (§4 F) and appended to a ledger,
+`runs/index.jsonl` (one row: exercise, condition, repeat, grader summary,
+turns, stopped?, tokens, cost, wall time). `_plan/results.md` is regenerated
+from the ledger. **Repeats are built in from the start** — the pitch step
+runs at ~0.2 confidence, so run-to-run variance is real and must be
+measured before small differences between conditions mean anything.
+
+Later levers: windowed score context; speculative fan-out (all sub-steps in
+one request) vs the sequential sub-loop.
 
 ## 6. Decisions
 

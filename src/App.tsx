@@ -6,7 +6,9 @@ import type { Exercise } from './exercises/load.ts'
 import { makeClient } from './jev/client.ts'
 import { type StepRecord, type TurnRecord, runLoop } from './jev/turn.ts'
 import { type Highlight, ScoreView } from './render/ScoreView.tsx'
-import { type FormatVariant, serializeScoreBlock } from './score/format.ts'
+import { serializeScoreBlock } from './score/format.ts'
+import { BASELINE, type Condition, PRESETS } from './jev/conditions.ts'
+import { GradePanel } from './ui/GradePanel.tsx'
 import { type Score, type VoiceName, cloneScore, midi, placeNote } from './score/model.ts'
 import { Controller } from './ui/Controller.tsx'
 import { TurnLog } from './ui/TurnLog.tsx'
@@ -18,7 +20,8 @@ const SPEEDS = [0, 250, 600, 1200, 2500] // ms between sub-steps; 0 = flat out
 export default function App() {
   const [ex, setEx] = useState<Exercise>(EXERCISES[0])
   const [score, setScore] = useState<Score>(ex.score)
-  const [variant, setVariant] = useState<FormatVariant>({ accidentals: 'words', align: false })
+  const [cond, setCond] = useState<Condition>(BASELINE)
+  const variant = cond
   const [humanMode, setHumanMode] = useState(false)
   const [run, setRun] = useState<RunState>('idle')
   const [speedIdx, setSpeedIdx] = useState(2)
@@ -56,7 +59,7 @@ export default function App() {
     const ac = new AbortController(); abortRef.current = ac
     setRun('running'); setError(undefined); setTurns([])
     try {
-      for await (const ev of runLoop(client, ex, score, { variant, maxTurns, signal: ac.signal })) {
+      for await (const ev of runLoop(client, ex, score, { condition: cond, maxTurns, signal: ac.signal })) {
         if (ac.signal.aborted) break
         if (ev.type === 'step') {
           setLastStep(ev.rec); setStepHistory(h => [...h, ev.rec]); setPartial(ev.partial)
@@ -116,8 +119,15 @@ export default function App() {
         <label>speed <input type="range" min={0} max={SPEEDS.length - 1} value={SPEEDS.length - 1 - speedIdx} onChange={e => setSpeedIdx(SPEEDS.length - 1 - +e.target.value)} /> {SPEEDS[speedIdx] ? `${SPEEDS[speedIdx]}ms` : 'max'}</label>
         <label>max turns <input type="number" value={maxTurns} min={1} onChange={e => setMaxTurns(+e.target.value)} style={{ width: 50 }} /></label>
         <span className="sep" />
-        <label><input type="checkbox" checked={variant.accidentals === 'unicode'} onChange={e => setVariant(v => ({ ...v, accidentals: e.target.checked ? 'unicode' : 'words' }))} /> ♯♭</label>
-        <label><input type="checkbox" checked={variant.align} onChange={e => setVariant(v => ({ ...v, align: e.target.checked }))} /> align columns</label>
+        <select value={cond.name} onChange={e => setCond(PRESETS.find(p => p.name === e.target.value)!)} title="condition preset">
+          {PRESETS.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+          {!PRESETS.some(p => p.name === cond.name) && <option value={cond.name}>{cond.name}</option>}
+        </select>
+        <label><input type="checkbox" checked={cond.accidentals === 'unicode'} onChange={e => setCond(c => ({ ...c, name: 'custom', accidentals: e.target.checked ? 'unicode' : 'words' }))} /> ♯♭</label>
+        <label><input type="checkbox" checked={cond.align} onChange={e => setCond(c => ({ ...c, name: 'custom', align: e.target.checked }))} /> align</label>
+        <label>guide <select value={cond.formatGuide} onChange={e => setCond(c => ({ ...c, name: 'custom', formatGuide: e.target.value as Condition['formatGuide'] }))}>{['none', 'brief', 'full'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label>theory <select value={cond.theory} onChange={e => setCond(c => ({ ...c, name: 'custom', theory: e.target.value as Condition['theory'] }))}>{['none', 'exercise', 'primer', 'detailed'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label>wording <select value={cond.stepWording} onChange={e => setCond(c => ({ ...c, name: 'custom', stepWording: e.target.value as Condition['stepWording'] }))}>{['plain', 'contextual'].map(x => <option key={x}>{x}</option>)}</select></label>
         <span className={`status ${run}`}>{run}{error ? ` — ${error}` : ''}</span>
       </header>
 
@@ -141,6 +151,8 @@ export default function App() {
         <section className="right">
           <Controller step={opts?.step ?? null} options={opts?.options ?? []} partialText={describeTurn(partial, variant)}
             last={lastStep} history={stepHistory} humanMode={humanMode} thinking={run === 'running'} onPick={humanPick} />
+          <h3>grade</h3>
+          <GradePanel score={score} />
           <h3>turns ({turns.length})</h3>
           <TurnLog turns={turns} />
         </section>

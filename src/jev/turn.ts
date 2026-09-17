@@ -1,7 +1,7 @@
 import type { TypeSafeClient } from '@typesafe-ai/sdk'
 import { type Option, type Step, type Turn, optionsFor, turnToNote } from '../controller/options.ts'
 import type { Exercise } from '../exercises/load.ts'
-import type { FormatVariant } from '../score/format.ts'
+import type { Condition } from './conditions.ts'
 import { type Note, type Score, cloneScore, placeNote, type VoiceName } from '../score/model.ts'
 import { type JevState, buildQuestion, buildState } from './prompt.ts'
 
@@ -34,7 +34,7 @@ export type LoopEvent =
 
 export interface LoopOptions {
   maxTurns?: number
-  variant: FormatVariant
+  condition: Condition
   signal?: AbortSignal
 }
 
@@ -46,10 +46,10 @@ export async function* runLoop(client: TypeSafeClient, ex: Exercise, start: Scor
     const turn: Turn = {}
     const steps: StepRecord[] = []
     for (;;) {
-      const o = optionsFor(score, turn, opts.variant)
+      const o = optionsFor(score, turn, opts.condition)
       if (!o) break
-      const state = buildState(ex, score, turn, opts.variant)
-      const q = buildQuestion(o.step, o.options)
+      const state = buildState(ex, score, turn, opts.condition)
+      const q = buildQuestion(o.step, o.options, opts.condition)
       const t0 = performance.now()
       const res = await client.systemOne({ state: state as unknown as Record<string, never>, questions: { pick: q } }, { signal: opts.signal })
       const a = res.answers.pick
