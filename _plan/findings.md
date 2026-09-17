@@ -1,5 +1,44 @@
 # Findings — does Jev understand basic music theory?
 
+## What we were exploring, and why
+
+The question behind this project is simple to state: **how much music theory
+does Jev know?** Jev is TypeSafe's System One model. Unlike a chat model it
+does not generate text or reason out loud; it takes a state and a set of
+typed questions and returns calibrated probabilities over the answers you
+define. That makes it fast, cheap and easy to build software around — but it
+also means its knowledge is only visible through the questions you ask.
+
+Common-practice harmony is a good place to look for that knowledge. The
+domain has explicit, teachable rules (chord construction, voice ranges,
+parallel fifths, tendency-tone resolution), a large written literature that
+any broadly trained model has seen, and a standard pedagogical task — the
+undergraduate SATB part-writing exercise — whose results a program can grade.
+If Jev has absorbed any of this, it should show up as better-than-chance
+choices of pitches, registers and chords; if it hasn't, the grader will say so.
+
+There are several ways one could put a decision model to work on music:
+
+- **As a judge**: give it a finished passage and ask whether a rule is
+  violated, which chord a sonority is, or which of two harmonizations is
+  better. This is the most natural fit for a Choice/Score/Noul model, but it
+  only tests recognition.
+- **As a filter inside a search**: have code enumerate candidate notes or
+  chords and let the model rank them. Powerful, but it hides how much the
+  model itself knows behind the code that generated the candidates.
+- **As the composer**, one decision at a time: give it the whole score and a
+  controller, let it choose *where* to write and *what*, and never pre-filter
+  its options for musical reasons. This is the hardest framing and the most
+  revealing one, because every mistake is the model's own.
+
+We chose the third. The hope was that Jev could act as a small unit of
+"musical common sense" — able to look at a partly written chorale in a plain
+text format, find the empty places, and fill them with chord tones in the
+right register, following the basic voice-leading rules — and that we could
+then learn what *presentation* (spelling of accidentals, alignment of the
+score text, instructions, order of work) drew that ability out most fully.
+Everything below is measured against that hope.
+
 Narrative over the numbers in `results.md` (regenerated from `runs/index.jsonl`).
 Model: `jev-1.13.0`. Written 2026-09-17 after ~250 runs; n per cell is 2–6,
 so treat single-cell differences as suggestive, patterns across cells as real.

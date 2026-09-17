@@ -185,8 +185,9 @@ export default function App() {
           <section className="left">
             <details className="about">
               <summary>What is this?</summary>
-              <p><b>Jev</b> (TypeSafe's System One model) answers typed multiple-choice questions with probabilities — it doesn't generate text. Here it works undergraduate SATB part-writing exercises through a <b>controller</b>: each turn it picks a voice, a measure, a beat, a pitch, an octave and a duration, seeing the whole score as plain text each time. Code never filters its options for musical reasons; a rule-based grader scores the result afterwards.</p>
-              <p>Blue notes are Jev's; orange is the note it just wrote; red notes are involved in a grader error. The controller on the right shows every option with Jev's probability for it. Turn on <b>human mode</b> to enter notes yourself, then hand the score to Jev.</p>
+              <p><b>The question:</b> how much music theory does <b>Jev</b> actually know? Jev is TypeSafe's System One model — it answers typed multiple-choice questions with calibrated probabilities and never generates text. Music theory is a good probe because the rules are explicit and a grader can check the work: if Jev has absorbed common-practice harmony from its training, it should be able to do an undergraduate part-writing exercise one decision at a time.</p>
+              <p>So it gets a <b>controller</b>, not a hint: each turn it picks a voice, a measure, a beat, a pitch, an octave and a duration, seeing the whole score as plain text. Code never filters its options for musical reasons; a rule-based grader scores the result afterwards, and a harness varies the score format and the order of work to see what draws the knowledge out.</p>
+              <p>Blue notes are Jev's; orange is the note it just wrote; red notes are involved in a grader error. The controller on the right shows every option with Jev's probability for it. Turn on <b>human mode</b> to enter notes yourself, then hand the score to Jev. The <b>findings</b> tab has the results.</p>
             </details>
             <div className="instructions"><b>{ex.title}</b> · {ex.keyText} · {ex.timeText}<p>{ex.instructions}</p></div>
             <ScoreView score={score} highlights={highlights} onTune={onTune} />
