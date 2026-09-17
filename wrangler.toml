@@ -3,7 +3,7 @@ main = "worker/index.ts"
 compatibility_date = "2026-09-01"
 
 [vars]
-ALLOWED_ORIGINS = "https://adammichaelwood.github.io,http://localhost:5173,http://localhost:4173"
+ALLOWED_ORIGINS = "https://adammichaelwood.com,https://adammichaelwood.github.io,http://localhost:5173,http://localhost:4173"
 PER_IP_DAILY = "1500"    # ~10 finished runs, or ~3 worst-case looping runs, per address per day
 GLOBAL_DAILY = "25000"   # ~$1.30/day at ~1,300 tokens per request
 
