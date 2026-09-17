@@ -6,8 +6,9 @@ import {
 export interface FormatVariant {
   accidentals: 'words' | 'unicode'
   align: boolean
+  emptyCell?: 'blank' | 'underscores' // how a fully undecided measure is written
 }
-export const DEFAULT_VARIANT: FormatVariant = { accidentals: 'words', align: false }
+export const DEFAULT_VARIANT: FormatVariant = { accidentals: 'words', align: false, emptyCell: 'blank' }
 
 // ---------- pitch / key text ----------
 export function pitchText(n: Pick<Note, 'letter' | 'acc'>, v: FormatVariant['accidentals'] = 'words') {
@@ -100,9 +101,9 @@ export function parseScoreBlock(text: string, key: Key, time: Time, lock = true)
 }
 
 /** tokens for one measure of one voice, gaps included, each with its onset */
-function measureTokens(s: Score, v: VoiceName, m: number, acc: FormatVariant['accidentals']): { tok: string; onset: number; len: number }[] {
+function measureTokens(s: Score, v: VoiceName, m: number, acc: FormatVariant['accidentals'], emptyCell: FormatVariant['emptyCell'] = 'blank'): { tok: string; onset: number; len: number }[] {
   const notes = s.voices[v][m]
-  if (notes.length === 0) return []
+  if (notes.length === 0 && emptyCell === 'blank') return []
   const out: { tok: string; onset: number; len: number }[] = []
   const unit = durBeats(beatUnitDur(s.time), s.time)
   for (const [a, b] of gaps(s, v, m)) {
@@ -125,7 +126,7 @@ function measureTokens(s: Score, v: VoiceName, m: number, acc: FormatVariant['ac
 export function serializeScoreBlock(s: Score, variant: FormatVariant = DEFAULT_VARIANT): string {
   const cells: Record<VoiceName, string[]> = { S: [], A: [], T: [], B: [] }
   for (let m = 0; m < s.nMeasures; m++) {
-    const toks = Object.fromEntries(VOICES.map(v => [v, measureTokens(s, v, m, variant.accidentals)])) as Record<VoiceName, ReturnType<typeof measureTokens>>
+    const toks = Object.fromEntries(VOICES.map(v => [v, measureTokens(s, v, m, variant.accidentals, variant.emptyCell)])) as Record<VoiceName, ReturnType<typeof measureTokens>>
     if (!variant.align) {
       for (const v of VOICES) cells[v].push(toks[v].map(t => t.tok).join(' '))
       continue

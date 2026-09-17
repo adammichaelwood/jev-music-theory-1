@@ -117,6 +117,28 @@ measured before small differences between conditions mean anything.
 Later levers: windowed score context; speculative fan-out (all sub-steps in
 one request) vs the sequential sub-loop.
 
+### 5.1 Strategies (added 2026-09-17 from your second note)
+
+A second dimension, orthogonal to the prompt levers: *how the controller
+constrains the order of work*, and whether Jev is told what's wrong. These
+are pilots first (a few runs each); anything promising joins the full matrix.
+
+| Strategy | What changes |
+|----------|--------------|
+| `free` | (default) any editable location, any time |
+| `forward` | only the earliest undecided moment is offered until the score is complete; then free editing / STOP |
+| `backward` | same, from the end (cadence-first approach) |
+| `line` | one voice at a time, in order B → S → A → T; positions within the voice are free |
+| `feedback` | after every move the grader runs and its issue list (text only, no suggestions) is placed in state as `feedback` |
+| `merged-pitch` (mine) | PITCH and OCTAVE become one Choice (`A-FLAT-4`, 105 options) — does splitting the register decision hurt? |
+| `windowed` (mine) | score text limited to the current measure ± 1 (tests context rot; needs a MEASURE choice first) |
+| `no-revision` (mine) | force STOP the moment the score is complete — measures whether Jev's revisions help or hurt (also computable from logs: grade at first completion vs final) |
+| `fanout` (mine) | all six sub-questions in a single request, none seeing earlier answers — does the sequential context matter? |
+
+Strategy constraints are *mechanical* ordering constraints on the controller,
+not musical filtering, so they stay inside the "no help" rule — except
+`feedback`, which deliberately crosses it, as you asked.
+
 ## 6. Decisions
 
 - **D1 (you).** No pre-validation or rule hints. Complete option sets every step.

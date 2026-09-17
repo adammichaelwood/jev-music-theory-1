@@ -73,6 +73,13 @@ output, `_plan/` for these docs.
       public-domain chorale melodies online if practical.
 - [ ] First results write-up in `_plan/results.md`.
 
+## Phase 8 — Strategies (pilots → matrix)
+- [ ] `strategy`, `feedback`, `pitchOctave` fields on Condition; option filtering in
+      `controller/options.ts`; feedback injection in `jev/turn.ts`.
+- [ ] `errorsAtFirstComplete` in the ledger (revision effect).
+- [ ] Pilot: each strategy × 3 exercises × 2 repeats; promote the promising ones.
+- [ ] `merged-pitch`, `windowed`, `fanout` as time allows.
+
 ## Later / deployment
 - Cloudflare Worker proxy + GH Pages build with user-entered key.
 - Fan-out variant of the turn (all sub-steps in one request).

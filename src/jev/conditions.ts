@@ -8,13 +8,14 @@ export interface Condition extends FormatVariant {
   stepWording: 'plain' | 'contextual'
 }
 
-export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, formatGuide: 'full', theory: 'exercise', stepWording: 'contextual' }
+export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual' }
 
 export const PRESETS: Condition[] = [
   BASELINE,
   { ...BASELINE, name: 'unicode', accidentals: 'unicode' },
   { ...BASELINE, name: 'aligned', align: true },
   { ...BASELINE, name: 'unicode-aligned', accidentals: 'unicode', align: true },
+  { ...BASELINE, name: 'underscores', emptyCell: 'underscores' },
   { ...BASELINE, name: 'guide-brief', formatGuide: 'brief' },
   { ...BASELINE, name: 'guide-none', formatGuide: 'none' },
   { ...BASELINE, name: 'theory-none', theory: 'none' },
@@ -22,7 +23,7 @@ export const PRESETS: Condition[] = [
   { ...BASELINE, name: 'theory-detailed', theory: 'detailed' },
   { ...BASELINE, name: 'wording-plain', stepWording: 'plain' },
   { ...BASELINE, name: 'minimal', formatGuide: 'brief', theory: 'none', stepWording: 'plain' },
-  { ...BASELINE, name: 'maximal', align: true, theory: 'detailed' },
+  { ...BASELINE, name: 'maximal', align: true, emptyCell: 'underscores', theory: 'detailed' },
 ]
 export const presetByName = (n: string) => PRESETS.find(p => p.name === n) ?? BASELINE
 
