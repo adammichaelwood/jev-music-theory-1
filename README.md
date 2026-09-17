@@ -11,6 +11,8 @@ the whole score as plain text every time. Code never filters its options for
 musical reasons. A rule-based grader scores the result, and a headless harness
 runs exercises × prompt conditions × strategies × repeats into a ledger.
 
+**Live demo:** https://adammichaelwood.com/jev-music-theory-1/
+
 **Findings:** [`_plan/findings.md`](_plan/findings.md) (also the *findings*
 tab in the app). Numbers: [`_plan/results.md`](_plan/results.md).
 Design and decision log: [`_plan/main.md`](_plan/main.md).

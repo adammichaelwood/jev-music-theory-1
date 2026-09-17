@@ -83,7 +83,7 @@ output, `_plan/` for these docs.
 ## Phase 10 — Deployment (2026-09-17)
 - [x] Cloudflare Worker proxy (`worker/`): BYOK pass-through, site key with per-IP/global daily caps (Durable Object), Origin + app-header + request-shape checks. Tested locally with `wrangler dev`.
 - [x] App: optional API key field (localStorage), `VITE_API_BASE`, GH Pages base path, Pages workflow.
-- [ ] Cloudflare account + `wrangler deploy` + repo variable — needs you (see README).
+- [x] Deployed 2026-09-17: Worker at https://jev-chorale-proxy.jev-chorale-lab.workers.dev, site at https://adammichaelwood.com/jev-music-theory-1/ (repo variable `VITE_API_BASE` set).
 - Fan-out variant of the turn (all sub-steps in one request).
 
 ## Phase 9 — Demo polish (2026-09-17)
