@@ -6,3 +6,6 @@ runs
 *.log
 .dev.vars
 .wrangler
+*.mp4
+*.webm
+video/

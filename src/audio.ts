@@ -10,6 +10,7 @@ export function audioContext() {
 /** audition one pitch (MIDI number) with the piano soundfont */
 export function playMidi(midi: number, ms = 600) {
   audioContext()
+  ;((window as unknown as { __jevAudio?: unknown[] }).__jevAudio ??= []).push({ t: Date.now(), midi, ms }) // timing log (used by scripts/record.ts)
   return abcjs.synth.playEvent(
     [{ pitch: midi, instrument: 0, duration: ms / 2000, volume: 90, start: 0, gap: 0 }],
     undefined, 2000,

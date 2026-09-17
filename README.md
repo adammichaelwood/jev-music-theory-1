@@ -63,6 +63,7 @@ npx tsx scripts/run.ts --ex 001,002 --cond baseline,backward --repeats 3 --jobs 
 npx tsx scripts/report.ts       # regenerates _plan/results.md from runs/index.jsonl
 npx tsx scripts/grade.ts runs/<file>.json
 npx tsx scripts/kern2ex.ts chor001.krn --phrases 1 --given S,B --id 020   # Bach chorale → exercise
+npx tsx scripts/record.ts video && python3 scripts/mixaudio.py video <piano-samples-dir>   # demo video (Playwright + ffmpeg)
 ```
 
 ## Layout
