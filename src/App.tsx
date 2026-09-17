@@ -87,7 +87,7 @@ export default function App() {
   // ---- human mode ----
   const humanPick = (o: Option) => {
     if (!opts) return
-    const next: Turn = { ...partial, [opts.step]: o.value }
+    const next: Turn = { ...partial, ...o.patch }
     if (opts.step === 'octave') void playMidi(midi({ ...next.pitch!, octave: next.octave! }))
     if (next.voice === 'STOP') { setPartial({}); return }
     if (optionsFor(score, next, variant) === null) {
@@ -127,6 +127,9 @@ export default function App() {
         <label><input type="checkbox" checked={cond.align} onChange={e => setCond(c => ({ ...c, name: 'custom', align: e.target.checked }))} /> align</label>
         <label>guide <select value={cond.formatGuide} onChange={e => setCond(c => ({ ...c, name: 'custom', formatGuide: e.target.value as Condition['formatGuide'] }))}>{['none', 'brief', 'full'].map(x => <option key={x}>{x}</option>)}</select></label>
         <label>theory <select value={cond.theory} onChange={e => setCond(c => ({ ...c, name: 'custom', theory: e.target.value as Condition['theory'] }))}>{['none', 'exercise', 'primer', 'detailed'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label>strategy <select value={cond.strategy} onChange={e => setCond(c => ({ ...c, name: 'custom', strategy: e.target.value as Condition['strategy'] }))}>{['free', 'forward', 'backward', 'line'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label><input type="checkbox" checked={cond.feedback} onChange={e => setCond(c => ({ ...c, name: 'custom', feedback: e.target.checked }))} /> feedback</label>
+        <label><input type="checkbox" checked={cond.pitchOctave === 'merged'} onChange={e => setCond(c => ({ ...c, name: 'custom', pitchOctave: e.target.checked ? 'merged' : 'split' }))} /> pitch+octave</label>
         <label>wording <select value={cond.stepWording} onChange={e => setCond(c => ({ ...c, name: 'custom', stepWording: e.target.value as Condition['stepWording'] }))}>{['plain', 'contextual'].map(x => <option key={x}>{x}</option>)}</select></label>
         <span className={`status ${run}`}>{run}{error ? ` — ${error}` : ''}</span>
       </header>

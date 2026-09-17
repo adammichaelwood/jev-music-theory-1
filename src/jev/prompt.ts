@@ -30,6 +30,7 @@ export function formatGuide(v: FormatVariant, level: Condition['formatGuide'] = 
   ].filter(Boolean).join(' ')
 }
 
+export const TASK_FEEDBACK = ' `feedback` lists the problems a grader currently finds in `score`; fix them.'
 export const TASK = 'You are completing an undergraduate music-theory exercise in four-part (SATB) common-practice harmony. You edit the score one note at a time using a controller: choose a voice, a measure, a beat, a pitch, an octave and a duration. The note you write replaces anything you previously wrote at that place in that voice. Notes given by the exercise cannot be changed. The score already contains everything decided so far.'
 
 export interface JevState {
@@ -38,16 +39,18 @@ export interface JevState {
   theory_rules?: string
   exercise: { title: string; key: string; time_signature: string; instructions?: string }
   score: string
+  feedback?: string[]
   current_turn: Record<string, string>
 }
 
-export function buildState(ex: Exercise, score: Score, turn: Turn, c: Condition): JevState {
+export function buildState(ex: Exercise, score: Score, turn: Turn, c: Condition, feedback?: string[]): JevState {
   const st: JevState = {
-    task: TASK,
+    task: TASK + (c.feedback ? TASK_FEEDBACK : ''),
     format_guide: formatGuide(c, c.formatGuide),
     theory_rules: c.theory === 'primer' ? THEORY_PRIMER : c.theory === 'detailed' ? THEORY_DETAILED : undefined,
     exercise: { title: ex.title, key: ex.keyText, time_signature: ex.timeText, instructions: c.theory === 'none' ? undefined : ex.instructions },
     score: serializeScoreBlock(score, c),
+    feedback,
     current_turn: describeTurn(turn, c),
   }
   for (const k of Object.keys(st) as (keyof JevState)[]) if (st[k] === undefined) delete st[k]

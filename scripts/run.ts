@@ -8,7 +8,7 @@ import { makeClient } from '../src/jev/client.ts'
 import { PRESETS, presetByName, type Condition } from '../src/jev/conditions.ts'
 import { runLoop, type TurnRecord } from '../src/jev/turn.ts'
 import { serializeScoreBlock } from '../src/score/format.ts'
-import type { Score } from '../src/score/model.ts'
+import { isComplete, type Score } from '../src/score/model.ts'
 import { loadExercises } from './exercises.ts'
 import type { Exercise } from '../src/exercises/load.ts'
 
@@ -32,6 +32,8 @@ export interface LedgerRow {
   chordRate: number // fraction of moments identified as a triad/7th chord
   meanPitchConf: number; meanStepConf: Record<string, number>
   revisions: number // turns that replaced an earlier Jev note
+  errorsAtFirstComplete: number | null // grader errors when the score first became complete (revision effect = errors - this)
+  turnsToComplete: number | null
   chords: string[]
 }
 
@@ -41,6 +43,7 @@ async function one(ex: Exercise, cond: Condition, rep: number): Promise<LedgerRo
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const turns: TurnRecord[] = []
   let final: Score = ex.score, tokens = 0, modelMs = 0, stopped = false, capped = false
+  let errorsAtFirstComplete: number | null = null, turnsToComplete: number | null = null
   const t0 = performance.now()
   if (!quiet) console.log(`\n# ${ex.id} · ${cond.name} · repeat ${rep}`)
   for await (const ev of runLoop(client, ex, ex.score, { condition: cond, maxTurns })) {
@@ -49,6 +52,7 @@ async function one(ex: Exercise, cond: Condition, rep: number): Promise<LedgerRo
       if (!quiet) console.log(`  ${ev.rec.step.padEnd(8)} → ${ev.rec.choice.padEnd(10)} conf ${ev.rec.confidence.toFixed(2)}  [${top(ev.rec.probabilities)}]  ${ev.rec.ms}ms`)
     } else if (ev.type === 'move') {
       turns.push(ev.rec); final = ev.score
+      if (errorsAtFirstComplete === null && isComplete(final)) { errorsAtFirstComplete = grade(final).errors; turnsToComplete = ev.rec.n }
       if (!quiet) console.log(`turn ${ev.rec.n}: ${ev.rec.steps.map(s => s.choice).join(' / ')}${ev.rec.removed?.length ? '  (replaced)' : ''}\n` + serializeScoreBlock(final, cond).replace(/^/gm, '    '))
     } else if (ev.type === 'stop') { turns.push(ev.rec); stopped = true; if (!quiet) console.log(`turn ${ev.rec.n}: STOP`) }
     else { capped = true; if (!quiet) console.log('hit max turns') }
@@ -69,6 +73,7 @@ async function one(ex: Exercise, cond: Condition, rep: number): Promise<LedgerRo
     chordRate: report.moments.length ? report.moments.filter(m => m.chord && m.chord.quality !== 'root only').length / report.moments.length : 0,
     meanPitchConf: meanStepConf.pitch, meanStepConf,
     revisions: turns.filter(t => t.removed?.length).length,
+    errorsAtFirstComplete, turnsToComplete,
     chords: report.moments.map(m => m.chord?.numeral ?? '?'),
   }
   writeFileSync(file, JSON.stringify({ exercise: ex.id, condition: cond, repeat: rep, turns, final: serializeScoreBlock(final, cond), report, row }, null, 1))

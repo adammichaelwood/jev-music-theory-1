@@ -1,4 +1,4 @@
-import { type Option, type Step, STEPS, PITCHES } from '../controller/options.ts'
+import { type Option, type Step, STEPS } from '../controller/options.ts'
 import type { StepRecord } from '../jev/turn.ts'
 import type { Acc, Letter } from '../score/model.ts'
 
@@ -38,7 +38,7 @@ export function Controller({ step, options, partialText, last, history, humanMod
         {showLast && <span> → {last.choice} · confidence {last.confidence.toFixed(2)} · {last.ms}ms</span>}
         {thinking && !humanMode && <span className="thinking"> · deciding {step ? STEP_TITLE[step].toLowerCase() : ''}…</span>}
       </div>
-      {shownStep === 'pitch'
+      {shownStep === 'pitch' && shownOptions.length === 21
         ? <Piano options={shownOptions} last={showLast ? last : undefined} humanMode={humanMode} onPick={onPick} />
         : shownStep && (
           <div className="options">
@@ -66,7 +66,7 @@ const WHITE: Letter[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const BLACK: [Letter, Letter][] = [['C', 'D'], ['D', 'E'], ['F', 'G'], ['G', 'A'], ['A', 'B']]
 const ODD: Record<string, Letter> = { 'B:sharp': 'C', 'C:flat': 'B', 'E:sharp': 'F', 'F:flat': 'E' }
 function Piano({ options, last, humanMode, onPick }: { options: Option[]; last?: StepRecord; humanMode: boolean; onPick?: (o: Option) => void }) {
-  const find = (letter: Letter, acc: Acc) => options.find(o => { const p = o.value as (typeof PITCHES)[number]; return p.letter === letter && p.acc === acc })!
+  const find = (letter: Letter, acc: Acc) => options.find(o => o.patch.pitch?.letter === letter && o.patch.pitch?.acc === acc)!
   const col = (l: Letter) => WHITE.indexOf(l) * 2 + 1
   return (
     <div className="piano">

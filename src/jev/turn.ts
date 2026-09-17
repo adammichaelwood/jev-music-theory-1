@@ -3,6 +3,7 @@ import { type Option, type Step, type Turn, optionsFor, turnToNote } from '../co
 import type { Exercise } from '../exercises/load.ts'
 import type { Condition } from './conditions.ts'
 import { type Note, type Score, cloneScore, placeNote, type VoiceName } from '../score/model.ts'
+import { grade } from '../grader/index.ts'
 import { type JevState, buildQuestion, buildState } from './prompt.ts'
 
 export interface StepRecord {
@@ -39,6 +40,13 @@ export interface LoopOptions {
 }
 
 /** Runs Jev turns as an async generator. Caller owns pacing (await next() when ready). */
+/** grader issues as plain sentences — what is wrong, never what to do (strategy `feedback`) */
+export function feedbackFor(score: Score): string[] {
+  const r = grade(score)
+  const lines = r.issues.filter(i => i.severity !== 'info').map(i => `measure ${i.m + 1}, beat ${i.beat + 1}: ${i.text}`)
+  return lines.length ? lines.slice(0, 40) : ['no problems found']
+}
+
 export async function* runLoop(client: TypeSafeClient, ex: Exercise, start: Score, opts: LoopOptions): AsyncGenerator<LoopEvent, void> {
   let score = start
   const max = opts.maxTurns ?? 150
@@ -48,7 +56,7 @@ export async function* runLoop(client: TypeSafeClient, ex: Exercise, start: Scor
     for (;;) {
       const o = optionsFor(score, turn, opts.condition)
       if (!o) break
-      const state = buildState(ex, score, turn, opts.condition)
+      const state = buildState(ex, score, turn, opts.condition, opts.condition.feedback ? feedbackFor(score) : undefined)
       const q = buildQuestion(o.step, o.options, opts.condition)
       const t0 = performance.now()
       const res = await client.systemOne({ state: state as unknown as Record<string, never>, questions: { pick: q } }, { signal: opts.signal })
@@ -61,7 +69,7 @@ export async function* runLoop(client: TypeSafeClient, ex: Exercise, start: Scor
       steps.push(rec)
       const chosen = o.options.find(x => x.key === a.choice)
       if (!chosen) throw new Error(`Jev chose "${a.choice}" which is not an option`)
-      ;(turn as Record<string, unknown>)[o.step] = chosen.value
+      Object.assign(turn, chosen.patch)
       yield { type: 'step', turnN: n, rec, partial: { ...turn } }
     }
     const trec: TurnRecord = { n, steps, turn }

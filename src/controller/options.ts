@@ -1,7 +1,7 @@
 import { pitchText, type FormatVariant } from '../score/format.ts'
 import {
   type Acc, type Dur, type Letter, type Note, type Score, type VoiceName, VOICES, VOICE_LABEL, LETTERS,
-  beatsPerBar, durBeats, gaps, isLocked, noteEnd,
+  beatsPerBar, durBeats, gaps, isComplete, isLocked, noteEnd,
 } from '../score/model.ts'
 
 export type Step = 'voice' | 'measure' | 'beat' | 'pitch' | 'octave' | 'duration'
@@ -16,15 +16,21 @@ export interface Turn {
   duration?: Dur
 }
 
-export interface Option<T = unknown> {
+export interface Option {
   key: string // the Choice criteria key Jev sees and returns
   description: string | null
-  value: T
+  patch: Partial<Turn> // what choosing it sets on the turn
+}
+
+/** the levers optionsFor cares about (a Condition satisfies this) */
+export interface ControllerOpts extends FormatVariant {
+  strategy?: 'free' | 'forward' | 'backward' | 'line'
+  pitchOctave?: 'split' | 'merged'
 }
 
 export const CONTROLLER_DURS: Dur[] = ['EIGHTH', 'QUARTER', 'DOTTED-QUARTER', 'HALF', 'DOTTED-HALF', 'WHOLE']
 export const OCTAVES = [2, 3, 4, 5, 6]
-/** all 21 spellings, chromatic order, flats before sharps within a pair */
+/** all 21 spellings, letter order, flat/natural/sharp */
 export const PITCHES: { letter: Letter; acc: Acc }[] = (() => {
   const out: { letter: Letter; acc: Acc }[] = []
   for (const letter of LETTERS) for (const acc of ['flat', 'natural', 'sharp'] as Acc[]) out.push({ letter, acc })
@@ -54,33 +60,55 @@ export function beatLabel(b: number) {
   return frac === 0 ? `BEAT ${whole + 1}` : `AND OF ${whole + 1}`
 }
 
-/** Option set for the next step. Only *mechanical* filtering (self-answered S3). */
-export function optionsFor(s: Score, t: Turn, variant: FormatVariant): { step: Step; options: Option[] } | null {
+/** strategy focus: which (voice, measure, gap) the strategy allows right now; undefined = unconstrained */
+interface Focus { voices: VoiceName[]; measure?: number; gap?: [number, number] }
+function focusFor(s: Score, o: ControllerOpts): Focus | undefined {
+  const strat = o.strategy ?? 'free'
+  if (strat === 'free' || isComplete(s)) return undefined
+  const bar = beatsPerBar(s.time)
+  if (strat === 'line') {
+    const v = (['B', 'S', 'A', 'T'] as VoiceName[]).find(v => s.voices[v].some((_, m) => gaps(s, v, m).length))
+    return v ? { voices: [v] } : undefined
+  }
+  // forward/backward: the earliest (latest) gap anywhere; every voice with a gap there is offered
+  const all: { v: VoiceName; m: number; gap: [number, number]; abs: number }[] = []
+  for (const v of VOICES) for (let m = 0; m < s.nMeasures; m++) for (const g of gaps(s, v, m)) all.push({ v, m, gap: g, abs: m * bar + (strat === 'forward' ? g[0] : g[1]) })
+  const pick = strat === 'forward' ? Math.min(...all.map(x => x.abs)) : Math.max(...all.map(x => x.abs))
+  const hits = all.filter(x => x.abs === pick)
+  return { voices: [...new Set(hits.map(x => x.v))], measure: hits[0].m, gap: hits[0].gap }
+}
+
+/** Option set for the next step. Only *mechanical* filtering (self-answered S3) plus strategy ordering constraints (§5.1). */
+export function optionsFor(s: Score, t: Turn, o: ControllerOpts): { step: Step; options: Option[] } | null {
   const step = nextStep(t)
   if (step === 'done') return null
+  const focus = focusFor(s, o)
   switch (step) {
     case 'voice':
       return { step, options: [
-        ...VOICES.filter(v => voiceEditable(s, v)).map(v => ({
-          key: VOICE_LABEL[v], value: v, description: `edit the ${VOICE_LABEL[v].toLowerCase()} (row ${v} of the score)`,
+        ...VOICES.filter(v => voiceEditable(s, v) && (!focus || focus.voices.includes(v))).map(v => ({
+          key: VOICE_LABEL[v], patch: { voice: v }, description: `edit the ${VOICE_LABEL[v].toLowerCase()} (row ${v} of the score)`,
         })),
-        { key: 'STOP', value: 'STOP', description: 'every voice is complete and the part-writing is correct; make no more edits' },
+        { key: 'STOP', patch: { voice: 'STOP' as const }, description: 'every voice is complete and the part-writing is correct; make no more edits' },
       ] }
     case 'measure':
       return { step, options: Array.from({ length: s.nMeasures }, (_, m) => m)
-        .filter(m => measureEditable(s, t.voice as VoiceName, m))
-        .map(m => ({ key: `MEASURE ${m + 1}`, value: m, description: null })) }
+        .filter(m => measureEditable(s, t.voice as VoiceName, m) && (focus?.measure === undefined || focus.measure === m))
+        .map(m => ({ key: `MEASURE ${m + 1}`, patch: { measure: m }, description: null })) }
     case 'beat': {
       const v = t.voice as VoiceName, m = t.measure!
       const positions: number[] = []
       for (let b = 0; b < beatsPerBar(s.time); b += 0.5) positions.push(b)
-      return { step, options: positions.filter(b => beatFree(s, v, m, b)).map(b => ({ key: beatLabel(b), value: b, description: null })) }
+      const inFocus = (b: number) => !focus?.gap || focus.measure !== m || (b >= focus.gap[0] && b < focus.gap[1])
+      return { step, options: positions.filter(b => beatFree(s, v, m, b) && inFocus(b)).map(b => ({ key: beatLabel(b), patch: { beat: b }, description: null })) }
     }
     case 'pitch':
-      return { step, options: PITCHES.map(p => ({ key: pitchText(p, variant.accidentals), value: p, description: null })) }
+      if (o.pitchOctave === 'merged')
+        return { step, options: PITCHES.flatMap(p => OCTAVES.map(oc => ({ key: `${pitchText(p, o.accidentals)}-${oc}`, patch: { pitch: p, octave: oc }, description: null }))) }
+      return { step, options: PITCHES.map(p => ({ key: pitchText(p, o.accidentals), patch: { pitch: p }, description: null })) }
     case 'octave':
-      return { step, options: OCTAVES.map(o => ({
-        key: `OCTAVE ${o}`, value: o, description: o === 4 ? 'the octave starting at middle C' : null,
+      return { step, options: OCTAVES.map(oc => ({
+        key: `OCTAVE ${oc}`, patch: { octave: oc }, description: oc === 4 ? 'the octave starting at middle C' : null,
       })) }
     case 'duration': {
       const v = t.voice as VoiceName, m = t.measure!, b = t.beat!
@@ -88,7 +116,7 @@ export function optionsFor(s: Score, t: Turn, variant: FormatVariant): { step: S
       const nextLocked = s.voices[v][m].filter(n => isLocked(s, v, m, n.onset) && n.onset > b).map(n => n.onset)
       const limit = Math.min(bar, ...nextLocked) - b
       return { step, options: CONTROLLER_DURS.filter(d => durBeats(d, s.time) <= limit + 1e-9).map(d => ({
-        key: d, value: d, description: durDescription(d, s),
+        key: d, patch: { duration: d }, description: durDescription(d, s),
       })) }
     }
   }

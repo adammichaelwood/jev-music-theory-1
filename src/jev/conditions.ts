@@ -6,9 +6,13 @@ export interface Condition extends FormatVariant {
   formatGuide: 'none' | 'brief' | 'full'
   theory: 'none' | 'exercise' | 'primer' | 'detailed'
   stepWording: 'plain' | 'contextual'
+  // strategies (§5.1)
+  strategy: 'free' | 'forward' | 'backward' | 'line'
+  feedback: boolean // grader issues placed in state after every move
+  pitchOctave: 'split' | 'merged' // one Choice for pitch+octave instead of two
 }
 
-export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual' }
+export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split' }
 
 export const PRESETS: Condition[] = [
   BASELINE,
@@ -24,6 +28,13 @@ export const PRESETS: Condition[] = [
   { ...BASELINE, name: 'wording-plain', stepWording: 'plain' },
   { ...BASELINE, name: 'minimal', formatGuide: 'brief', theory: 'none', stepWording: 'plain' },
   { ...BASELINE, name: 'maximal', align: true, emptyCell: 'underscores', theory: 'detailed' },
+  // strategies
+  { ...BASELINE, name: 'forward', strategy: 'forward' },
+  { ...BASELINE, name: 'backward', strategy: 'backward' },
+  { ...BASELINE, name: 'line', strategy: 'line' },
+  { ...BASELINE, name: 'feedback', feedback: true },
+  { ...BASELINE, name: 'merged-pitch', pitchOctave: 'merged' },
+  { ...BASELINE, name: 'forward-feedback', strategy: 'forward', feedback: true },
 ]
 export const presetByName = (n: string) => PRESETS.find(p => p.name === n) ?? BASELINE
 
