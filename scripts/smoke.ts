@@ -1,7 +1,7 @@
 // npx tsx scripts/smoke.ts  — one Choice question, direct to the API via SDK.
 import 'dotenv/config'
 import { choice } from '@typesafe-ai/sdk'
-import { makeClient } from '../src/jev/client.ts'
+import { makeClient } from '@core/jev/client.ts'
 
 const client = makeClient()
 const t0 = performance.now()

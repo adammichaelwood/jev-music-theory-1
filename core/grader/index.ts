@@ -1,8 +1,8 @@
-import { pitchText } from '../score/format.ts'
+import { pitchText } from '@core/formats/csv.ts'
 import {
   type Acc, type Letter, type Note, type Score, type VoiceName, VOICES, VOICE_LABEL, LETTERS,
   beatsPerBar, gaps, letterIndex, midi, noteAt, pitchClass, voiceNotes,
-} from '../score/model.ts'
+} from '@core/score/model.ts'
 
 export type Severity = 'error' | 'warn' | 'info'
 export interface Issue { kind: string; severity: Severity; m: number; beat: number; voices?: VoiceName[]; text: string }

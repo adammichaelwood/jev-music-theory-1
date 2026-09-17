@@ -2,8 +2,8 @@
 //   npx tsx scripts/kern2ex.ts chor001.krn --phrases 1 --given S,B --id 010 --difficulty 2 [--title "..."]
 // Takes the first N phrases (fermata-delimited). Pickup measures are padded with given rests.
 import { readFileSync, writeFileSync } from 'node:fs'
-import type { Dur, Note, VoiceName } from '../src/score/model.ts'
-import { noteToken } from '../src/score/format.ts'
+import type { Dur, Note, VoiceName } from '@core/score/model.ts'
+import { noteToken } from '@core/formats/csv.ts'
 
 const args = process.argv.slice(2)
 const file = args[0]

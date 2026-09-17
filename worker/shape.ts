@@ -1,6 +1,6 @@
 // Does this request body look like one this app would send? Returns null if OK, else a reason.
 // Only the app's own prompt shapes pass, so the site key can't be borrowed as a general TypeSafe relay.
-import { MODELS, TASK } from '../src/jev/task.ts'
+import { MODELS, TASK } from '@core/jev/task.ts'
 
 const KEY_RES = [
   /^(SOPRANO|ALTO|TENOR|BASS|STOP)$/,

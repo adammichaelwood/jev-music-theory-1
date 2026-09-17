@@ -1,13 +1,13 @@
 import type { TypeSafeClient } from '@typesafe-ai/sdk'
-import { type Option, type Step, type Turn, optionsFor, turnToNote } from '../controller/options.ts'
-import type { Exercise } from '../exercises/load.ts'
+import { type Option, type Step, type Turn, optionsFor, turnToNote } from '@core/controller/options.ts'
+import type { Exercise } from '@core/exercises/load.ts'
 import type { Condition } from './conditions.ts'
-import { type Note, type Score, cloneScore, placeNote, type VoiceName } from '../score/model.ts'
-import { grade } from '../grader/index.ts'
+import { type Note, type Score, cloneScore, placeNote, type VoiceName } from '@core/score/model.ts'
+import { grade } from '@core/grader/index.ts'
 import { type JevState, buildFanoutQuestion, buildQuestion, buildState } from './prompt.ts'
-import { CONTROLLER_DURS, OCTAVES, PITCHES, beatLabel } from '../controller/options.ts'
-import { VOICES, VOICE_LABEL, beatsPerBar, durBeats, isLocked, noteEnd } from '../score/model.ts'
-import { pitchText, serializeScoreBlock } from '../score/format.ts'
+import { CONTROLLER_DURS, OCTAVES, PITCHES, beatLabel } from '@core/controller/options.ts'
+import { VOICES, VOICE_LABEL, beatsPerBar, durBeats, isLocked, noteEnd } from '@core/score/model.ts'
+import { pitchText, serializeScoreBlock } from '@core/formats/csv.ts'
 
 export interface StepRecord {
   step: Step

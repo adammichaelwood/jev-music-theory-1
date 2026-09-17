@@ -1,6 +1,6 @@
 // npx tsx scripts/report.ts  — regenerate _plan/results.md from runs/index.jsonl
 import { readFileSync, writeFileSync } from 'node:fs'
-import type { LedgerRow } from './run.ts'
+import type { LedgerRow } from '@experiments/lab/run.ts'
 
 const rows: LedgerRow[] = readFileSync('runs/index.jsonl', 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l))
 const mean = (xs: number[]) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN

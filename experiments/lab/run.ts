@@ -4,14 +4,14 @@
 // Writes runs/<stamp>-<ex>-<cond>-r<n>.json and appends a row to runs/index.jsonl.
 import 'dotenv/config'
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { formatReport, grade, type Report } from '../src/grader/index.ts'
-import { makeClient } from '../src/jev/client.ts'
-import { PRESETS, presetByName, type Condition } from '../src/jev/conditions.ts'
-import { runLoop, type TurnRecord } from '../src/jev/turn.ts'
-import { serializeScoreBlock } from '../src/score/format.ts'
-import { isComplete, type Score } from '../src/score/model.ts'
-import { loadExercises } from './exercises.ts'
-import type { Exercise } from '../src/exercises/load.ts'
+import { formatReport, grade, type Report } from '@core/grader/index.ts'
+import { makeClient } from '@core/jev/client.ts'
+import { PRESETS, presetByName, type Condition } from '@core/loop/conditions.ts'
+import { runLoop, type TurnRecord } from '@core/loop/turn.ts'
+import { serializeScoreBlock } from '@core/formats/csv.ts'
+import { isComplete, type Score } from '@core/score/model.ts'
+import { loadExercises } from '@core/exercises/node.ts'
+import type { Exercise } from '@core/exercises/load.ts'
 
 const args = process.argv.slice(2)
 const opt = (k: string, d: string) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d }

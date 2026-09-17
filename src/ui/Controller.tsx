@@ -1,6 +1,6 @@
-import { type Option, type Step, STEPS } from '../controller/options.ts'
-import type { StepRecord } from '../jev/turn.ts'
-import type { Acc, Letter } from '../score/model.ts'
+import { type Option, type Step, STEPS } from '@core/controller/options.ts'
+import type { StepRecord } from '@core/loop/turn.ts'
+import type { Acc, Letter } from '@core/score/model.ts'
 
 interface Props {
   step: Step | null

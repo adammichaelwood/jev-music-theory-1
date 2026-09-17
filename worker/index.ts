@@ -3,7 +3,7 @@
 //  - Otherwise the site key (secret TYPESAFE_API_KEY) is used, subject to per-IP and global daily caps (Durable Object).
 //  - Every request must come from an allowed Origin, carry the app header, and match the app's request shape.
 import { DurableObject } from 'cloudflare:workers'
-import { APP_HEADER } from '../src/jev/task.ts'
+import { APP_HEADER } from '@core/jev/task.ts'
 import { checkShape } from './shape.ts'
 
 export interface Env {

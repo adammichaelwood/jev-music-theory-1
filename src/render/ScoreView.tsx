@@ -1,8 +1,8 @@
 import abcjs from 'abcjs'
 import { useEffect, useRef } from 'react'
-import type { Score, VoiceName } from '../score/model.ts'
-import { lockKey } from '../score/model.ts'
-import { type NoteRef, scoreToAbc } from './abc.ts'
+import type { Score, VoiceName } from '@core/score/model.ts'
+import { lockKey } from '@core/score/model.ts'
+import { type NoteRef, scoreToAbc } from '@core/formats/abc.ts'
 
 export interface Highlight { v: VoiceName; m: number; onset?: number; cls: string }
 

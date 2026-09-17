@@ -4,9 +4,9 @@
 import { chromium } from 'playwright'
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseKey, parseScoreBlock, parseTime } from '../src/score/format.ts'
-import { VOICES, beatsPerBar, durBeats, midi } from '../src/score/model.ts'
-import { loadExercises } from './exercises.ts'
+import { parseKey, parseScoreBlock, parseTime } from '@core/formats/csv.ts'
+import { VOICES, beatsPerBar, durBeats, midi } from '@core/score/model.ts'
+import { loadExercises } from '@core/exercises/node.ts'
 
 const OUT = process.argv[2] ?? 'video'
 const BASE = 'http://localhost:5173/'

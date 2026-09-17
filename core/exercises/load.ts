@@ -1,6 +1,6 @@
 import { load as yamlLoad } from 'js-yaml'
-import { parseKey, parseScoreBlock, parseTime } from '../score/format.ts'
-import type { Score } from '../score/model.ts'
+import { parseKey, parseScoreBlock, parseTime } from '@core/formats/csv.ts'
+import type { Score } from '@core/score/model.ts'
 
 export interface Exercise {
   id: string

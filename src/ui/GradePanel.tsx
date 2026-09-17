@@ -1,4 +1,4 @@
-import type { Report } from '../grader/index.ts'
+import type { Report } from '@core/grader/index.ts'
 
 export function GradePanel({ report: r }: { report: Report }) {
   return (

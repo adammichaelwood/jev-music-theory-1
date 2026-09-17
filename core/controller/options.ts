@@ -1,8 +1,8 @@
-import { pitchText, type FormatVariant } from '../score/format.ts'
+import { pitchText, type FormatVariant } from '@core/formats/csv.ts'
 import {
   type Acc, type Dur, type Letter, type Note, type Score, type VoiceName, VOICES, VOICE_LABEL, LETTERS,
   beatsPerBar, durBeats, gaps, isComplete, isLocked, noteEnd,
-} from '../score/model.ts'
+} from '@core/score/model.ts'
 
 export type Step = 'voice' | 'measure' | 'beat' | 'pitch' | 'octave' | 'duration'
 export const STEPS: Step[] = ['voice', 'measure', 'beat', 'pitch', 'octave', 'duration']

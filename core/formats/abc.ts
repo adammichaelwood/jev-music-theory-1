@@ -1,6 +1,6 @@
 import {
-  type Acc, type Dur, type Letter, type Note, type Score, type VoiceName, VOICES, LETTERS, beatsPerBar, durBeats, gaps, DURS, midi,
-} from '../score/model.ts'
+  type Acc, type Dur, type Letter, type Note, type Score, type VoiceName, VOICES, VOICE_LABEL, LETTERS, beatsPerBar, durBeats, gaps, DURS, midi,
+} from '@core/score/model.ts'
 
 // ABC unit length = 1/16
 const DUR_16: Record<Dur, number> = { WHOLE: 16, 'DOTTED-HALF': 12, HALF: 8, 'DOTTED-QUARTER': 6, QUARTER: 4, EIGHTH: 2, SIXTEENTH: 1 }
@@ -50,13 +50,15 @@ function abcPitch(n: Note, accText: string) {
 }
 const ACC_ABC: Record<Acc, string> = { natural: '=', sharp: '^', flat: '_' }
 
-export function scoreToAbc(s: Score, title = ''): AbcOut {
+export function scoreToAbc(s: Score, title = '', opts: { unit?: 8 | 16; forModel?: boolean } = {}): AbcOut {
+  const U = opts.unit ?? 16
+  const D = (d: Dur) => DUR_16[d] * U / 16
   const ks = keySig(s)
   const refs = new Map<number, NoteRef>()
   const header = [
-    'X:1', title ? `T:${title}` : null, `M:${s.time.num}/${s.time.den}`, 'L:1/16', 'Q:1/4=72', `K:${abcKeyName(s)}`,
-    '%%score (S A) (T B)', '%%stretchlast 1', '%%barsperstaff 4',
-    ...VOICES.map(v => `V:${v} clef=${CLEF[v]}`),
+    'X:1', title ? `T:${title}` : null, `M:${s.time.num}/${s.time.den}`, `L:1/${U}`, opts.forModel ? null : 'Q:1/4=72', `K:${abcKeyName(s)}`,
+    ...(opts.forModel ? [] : ['%%score (S A) (T B)', '%%stretchlast 1', '%%barsperstaff 4']),
+    ...VOICES.map(v => `V:${v} clef=${CLEF[v]}${opts.forModel ? ` name="${VOICE_LABEL[v]}"` : ''}`),
   ].filter(Boolean).join('\n') + '\n'
   let abc = header
   for (const v of VOICES) {
@@ -68,7 +70,7 @@ export function scoreToAbc(s: Score, title = ''): AbcOut {
         let cur = a
         while (b - cur > 1e-9) {
           const d = DURS.find(d => durBeats(d, s.time) <= b - cur + 1e-9)!
-          items.push({ onset: cur, text: `x${DUR_16[d]}` }); cur += durBeats(d, s.time)
+          items.push({ onset: cur, text: `x${D(d)}` }); cur += durBeats(d, s.time)
         }
       }
       items.sort((x, y) => x.onset - y.onset)
@@ -77,11 +79,11 @@ export function scoreToAbc(s: Score, title = ''): AbcOut {
         if (!it.note) { abc += it.text + ' '; continue }
         const n = it.note
         let tok: string
-        if (n.rest) tok = `z${DUR_16[n.dur]}`
+        if (n.rest) tok = `z${D(n.dur)}`
         else {
           const need = n.acc !== ks[n.letter] || touched.has(n.letter)
           if (n.acc !== ks[n.letter]) touched.add(n.letter)
-          tok = abcPitch(n, need ? ACC_ABC[n.acc] : '') + DUR_16[n.dur]
+          tok = abcPitch(n, need ? ACC_ABC[n.acc] : '') + D(n.dur)
           if (n.figures) tok = `"_${n.figures}"` + tok
         }
         refs.set(abc.length, { v, m, onset: n.onset })

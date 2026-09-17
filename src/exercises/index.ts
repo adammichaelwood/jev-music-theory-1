@@ -1,4 +1,4 @@
-import { type Exercise, parseExercise } from './load.ts'
+import { type Exercise, parseExercise } from '@core/exercises/load.ts'
 
 // Vite: bundle every exercise file as raw text (browser only; Node uses scripts/exercises.ts)
 const files = import.meta.glob('../../exercises/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>

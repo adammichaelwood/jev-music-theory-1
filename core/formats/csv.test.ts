@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseKey, parseScoreBlock, parseTime, serializeScoreBlock } from './format.ts'
-import { gaps, isComplete, placeNote } from './model.ts'
+import { parseKey, parseScoreBlock, parseTime, serializeScoreBlock } from '@core/formats/csv.ts'
+import { gaps, isComplete, placeNote } from '@core/score/model.ts'
 
 const K = parseKey('E-flat major'), T = parseTime('4/4')
 

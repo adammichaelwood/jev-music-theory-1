@@ -1,7 +1,7 @@
 import {
   type Acc, type Dur, DURS, type Key, type Letter, type Note, type Score, type Time, type VoiceName,
   VOICES, beatUnitDur, beatsPerBar, durBeats, emptyScore, gaps, lockKey, noteEnd,
-} from './model.ts'
+} from '@core/score/model.ts'
 
 export interface FormatVariant {
   accidentals: 'words' | 'unicode'

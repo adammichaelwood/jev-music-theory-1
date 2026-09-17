@@ -17,10 +17,12 @@
     "jsx": "react-jsx",
 
     /* Linting */
+    "paths": { "@core/*": ["./core/*"], "@experiments/*": ["./experiments/*"] },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "core"],
+  "exclude": ["core/exercises/node.ts", "core/harness"]
 }

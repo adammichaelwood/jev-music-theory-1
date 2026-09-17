@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { StepRecord, TurnRecord } from '../jev/turn.ts'
+import type { StepRecord, TurnRecord } from '@core/loop/turn.ts'
 
 const top = (r: StepRecord, n = 5) => Object.entries(r.probabilities).sort((a, b) => b[1] - a[1]).slice(0, n)
 

@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { audioContext, makePlayer, playMidi } from './audio.ts'
-import { type Option, type Turn, describeTurn, optionsFor, turnToNote } from './controller/options.ts'
+import { type Option, type Turn, describeTurn, optionsFor, turnToNote } from '@core/controller/options.ts'
 import { EXERCISES } from './exercises/index.ts'
-import type { Exercise } from './exercises/load.ts'
-import { grade } from './grader/index.ts'
-import { describeError, makeClient, setUserApiKey, userApiKey } from './jev/client.ts'
-import { BASELINE, type Condition, PRESETS } from './jev/conditions.ts'
-import { type StepRecord, type TurnRecord, runLoop } from './jev/turn.ts'
+import type { Exercise } from '@core/exercises/load.ts'
+import { grade } from '@core/grader/index.ts'
+import { describeError, makeClient, setUserApiKey, userApiKey } from '@core/jev/client.ts'
+import { BASELINE, type Condition, PRESETS } from '@core/loop/conditions.ts'
+import { type StepRecord, type TurnRecord, runLoop } from '@core/loop/turn.ts'
 import { type Highlight, ScoreView } from './render/ScoreView.tsx'
-import { serializeScoreBlock } from './score/format.ts'
-import { type Score, type VoiceName, cloneScore, midi, noteAt, placeNote } from './score/model.ts'
+import { serializeScoreBlock } from '@core/formats/csv.ts'
+import { type Score, type VoiceName, cloneScore, midi, noteAt, placeNote } from '@core/score/model.ts'
 import { Controller } from './ui/Controller.tsx'
 import { GradePanel } from './ui/GradePanel.tsx'
 import { Markdown } from './ui/Markdown.tsx'
@@ -162,6 +162,7 @@ export default function App() {
       )}
       {tab === 'lab' && advanced && (
         <div className="advanced">
+          <label>score format <select value={cond.format} onChange={e => setC({ format: e.target.value as Condition['format'] })}>{['csv', 'abc', 'lilypond'].map(x => <option key={x}>{x}</option>)}</select></label>
           <label><input type="checkbox" checked={cond.accidentals === 'unicode'} onChange={e => setC({ accidentals: e.target.checked ? 'unicode' : 'words' })} /> ♯♭ unicode accidentals</label>
           <label><input type="checkbox" checked={cond.align} onChange={e => setC({ align: e.target.checked })} /> align columns</label>
           <label><input type="checkbox" checked={cond.emptyCell === 'underscores'} onChange={e => setC({ emptyCell: e.target.checked ? 'underscores' : 'blank' })} /> empty bars as _ _ _</label>

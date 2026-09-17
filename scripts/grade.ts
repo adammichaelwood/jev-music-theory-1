@@ -1,8 +1,8 @@
 // npx tsx scripts/grade.ts runs/<file>.json  — grade a saved run's final score (or an exercise id to grade the given notes)
 import { readFileSync } from 'node:fs'
-import { formatReport, grade } from '../src/grader/index.ts'
-import { parseKey, parseScoreBlock, parseTime } from '../src/score/format.ts'
-import { loadExercises } from './exercises.ts'
+import { formatReport, grade } from '@core/grader/index.ts'
+import { parseKey, parseScoreBlock, parseTime } from '@core/formats/csv.ts'
+import { loadExercises } from '@core/exercises/node.ts'
 
 const arg = process.argv[2]
 const run = JSON.parse(readFileSync(arg, 'utf8'))

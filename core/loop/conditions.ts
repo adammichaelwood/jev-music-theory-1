@@ -1,8 +1,10 @@
-import type { FormatVariant } from '../score/format.ts'
+import type { FormatVariant } from '@core/formats/csv.ts'
+import type { FormatName } from '@core/formats/index.ts'
 
 /** One experimental condition: every lever we vary in the prompt/state. */
 export interface Condition extends FormatVariant {
   name: string
+  format: FormatName // how the score is written for the model
   formatGuide: 'none' | 'brief' | 'full'
   theory: 'none' | 'exercise' | 'primer' | 'detailed'
   stepWording: 'plain' | 'contextual'
@@ -15,7 +17,7 @@ export interface Condition extends FormatVariant {
   history: number // how many recent moves are listed in state as `recent_moves` (0 = none; S5)
 }
 
-export const BASELINE: Condition = { name: 'baseline', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split', context: 'full', requests: 'sequential', history: 0 }
+export const BASELINE: Condition = { name: 'baseline', format: 'csv', accidentals: 'words', align: false, emptyCell: 'blank', formatGuide: 'full', theory: 'exercise', stepWording: 'contextual', strategy: 'free', feedback: false, pitchOctave: 'split', context: 'full', requests: 'sequential', history: 0 }
 
 export const PRESETS: Condition[] = [
   BASELINE,
@@ -42,6 +44,11 @@ export const PRESETS: Condition[] = [
   { ...BASELINE, name: 'fanout', requests: 'fanout' },
   { ...BASELINE, name: 'maximal-merged', align: true, emptyCell: 'underscores', theory: 'detailed', pitchOctave: 'merged' },
   { ...BASELINE, name: 'history', history: 6 },
+  // score formats
+  { ...BASELINE, name: 'abc', format: 'abc' },
+  { ...BASELINE, name: 'lilypond', format: 'lilypond' },
+  { ...BASELINE, name: 'abc-backward', format: 'abc', strategy: 'backward' },
+  { ...BASELINE, name: 'lilypond-backward', format: 'lilypond', strategy: 'backward' },
   { ...BASELINE, name: 'maximal-history', align: true, emptyCell: 'underscores', theory: 'detailed', history: 6 },
   { ...BASELINE, name: 'backward-history', strategy: 'backward', history: 6 },
 ]
