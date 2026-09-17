@@ -26,3 +26,39 @@ export function scoreToLilypond(s: Score): string {
   lines.push(`\\score { << \\new Staff << \\global \\new Voice { \\voiceOne \\soprano } \\new Voice { \\voiceTwo \\alto } >> \\new Staff << \\global \\clef bass \\new Voice { \\voiceOne \\tenor } \\new Voice { \\voiceTwo \\bass } >> >> }`)
   return lines.join('\n')
 }
+
+// ---- parser for the subset above (absolute pitches, s/r rests, | bars) — used to read model-written scores ----
+import type { Key, Note, Time } from '@core/score/model.ts'
+import { emptyScore, LETTERS, beatsPerBar } from '@core/score/model.ts'
+const DUR_FROM: Record<string, Dur> = { '1': 'WHOLE', '2.': 'DOTTED-HALF', '2': 'HALF', '4.': 'DOTTED-QUARTER', '4': 'QUARTER', '8': 'EIGHTH', '16': 'SIXTEENTH' }
+export function parseLilypond(text: string, key: Key, time: Time): Score {
+  const voices: Record<string, string> = {}
+  for (const m of text.matchAll(/\b(soprano|alto|tenor|bass)\s*=\s*\{([^}]*)\}/g)) voices[m[1]] = m[2]
+  const bars = (body: string) => body.replace(/\\[a-zA-Z]+/g, ' ').split('|').map(b => b.trim()).filter((b, i, a) => b || i < a.length - 1)
+  const nBars = Math.max(...Object.values(voices).map(v => bars(v).length))
+  const s = emptyScore(key, time, nBars)
+  const bar = beatsPerBar(time)
+  for (const [vn, body] of Object.entries(voices)) {
+    const v = vn[0].toUpperCase() as 'S' | 'A' | 'T' | 'B'
+    bars(body).forEach((b, m) => {
+      let onset = 0
+      let lastDur: Dur = 'QUARTER'
+      for (const tok of b.split(/\s+/).filter(Boolean)) {
+        const mm = /^([a-gsr])(is|es|isis|eses)?([',]*)(\d+\.?)?$/.exec(tok)
+        if (!mm) continue
+        const dur: Dur | undefined = mm[4] ? DUR_FROM[mm[4]] : lastDur; if (!dur) continue
+        lastDur = dur
+        if (mm[1] === 's') { onset += durBeats(dur, time); continue }
+        const letter = mm[1].toUpperCase() as Note['letter']
+        if (mm[1] === 'r') { s.voices[v][m].push({ letter: 'C', acc: 'natural', octave: 4, dur, onset, rest: true }); onset += durBeats(dur, time); continue }
+        if (!LETTERS.includes(letter)) continue
+        const acc: Acc = mm[2] === 'is' ? 'sharp' : mm[2] === 'es' ? 'flat' : 'natural'
+        const ups = (mm[3].match(/'/g) ?? []).length, downs = (mm[3].match(/,/g) ?? []).length
+        const note: Note = { letter, acc, octave: 3 + ups - downs, dur, onset }
+        if (onset + durBeats(dur, time) <= bar + 1e-9) s.voices[v][m].push(note)
+        onset += durBeats(dur, time)
+      }
+    })
+  }
+  return s
+}

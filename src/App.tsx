@@ -5,6 +5,7 @@ import { EXERCISES } from './exercises/index.ts'
 import type { Exercise } from '@core/exercises/load.ts'
 import { grade } from '@core/grader/index.ts'
 import { describeError, makeClient, setUserApiKey, userApiKey } from '@core/jev/client.ts'
+import { jevDecider } from '@core/decide/jev.ts'
 import { BASELINE, type Condition, PRESETS } from '@core/loop/conditions.ts'
 import { type StepRecord, type TurnRecord, runLoop } from '@core/loop/turn.ts'
 import { type Highlight, ScoreView } from './render/ScoreView.tsx'
@@ -36,7 +37,7 @@ export default function App() {
   const [error, setError] = useState<string>()
   const [tab, setTab] = useState<'lab' | 'findings'>('lab')
   const [advanced, setAdvanced] = useState(false)
-  const [stats, setStats] = useState({ requests: 0, tokens: 0, ms: 0 })
+  const [stats, setStats] = useState({ requests: 0, tokens: 0, ms: 0, cost: 0 })
   const [apiKey, setApiKey] = useState<string | null>(userApiKey())
   const [keyOpen, setKeyOpen] = useState(false)
 
@@ -62,7 +63,7 @@ export default function App() {
   const loadExercise = (e: Exercise) => {
     abortRef.current?.abort()
     setEx(e); setScore(e.score); setTurns([]); setPartial({}); setStepHistory([]); setLastStep(undefined); setLive([]); setRun('idle'); setError(undefined)
-    setStats({ requests: 0, tokens: 0, ms: 0 })
+    setStats({ requests: 0, tokens: 0, ms: 0, cost: 0 })
   }
 
   const onTune = useCallback((tune: abcjs.TuneObject) => {
@@ -74,13 +75,13 @@ export default function App() {
   const start = async () => {
     audioContext()
     const ac = new AbortController(); abortRef.current = ac
-    setRun('running'); setError(undefined); setTurns([]); setStats({ requests: 0, tokens: 0, ms: 0 })
+    setRun('running'); setError(undefined); setTurns([]); setStats({ requests: 0, tokens: 0, ms: 0, cost: 0 })
     try {
-      for await (const ev of runLoop(client, ex, score, { condition: cond, maxTurns, signal: ac.signal })) {
+      for await (const ev of runLoop(jevDecider(client), ex, score, { client, condition: cond, maxTurns, signal: ac.signal })) {
         if (ac.signal.aborted) break
         if (ev.type === 'step') {
           setLastStep(ev.rec); setStepHistory(h => [...h, ev.rec]); setPartial(ev.partial)
-          setStats(s => ({ requests: s.requests + 1, tokens: s.tokens + ev.rec.inputTokens, ms: s.ms + ev.rec.ms }))
+          setStats(s => ({ requests: s.requests + 1, tokens: s.tokens + ev.rec.inputTokens, ms: s.ms + ev.rec.ms, cost: s.cost + ev.rec.costUsd }))
           if (ev.partial.voice && ev.partial.voice !== 'STOP' && ev.partial.measure !== undefined)
             setLive([{ v: ev.partial.voice, m: ev.partial.measure, onset: ev.partial.beat, cls: 'target' }])
           if (ev.partial.octave !== undefined && ev.partial.pitch && (ev.rec.step === 'octave' || ev.rec.step === 'pitch')) void playMidi(midi({ ...ev.partial.pitch, octave: ev.partial.octave }))
@@ -148,7 +149,7 @@ export default function App() {
           <button className="link" onClick={() => setAdvanced(a => !a)}>{advanced ? 'hide' : 'show'} experiment settings</button>
           <button className="link" onClick={() => setKeyOpen(k => !k)} title="Optional. Without a key the demo uses a shared key with a daily limit.">{apiKey ? 'using your API key' : 'API key'}</button>
           <span className={`status ${run}`}>
-            {run}{error ? ` — ${error}` : ''}{stats.requests ? ` · ${stats.requests} requests · ${stats.tokens.toLocaleString()} tokens · $${(stats.tokens * 0.042 / 1e6).toFixed(4)} · ${(stats.ms / 1000).toFixed(1)}s model time` : ''}
+            {run}{error ? ` — ${error}` : ''}{stats.requests ? ` · ${stats.requests} requests · ${stats.tokens.toLocaleString()} tokens · $${stats.cost.toFixed(4)} · ${(stats.ms / 1000).toFixed(1)}s model time` : ''}
           </span>
         </>}
       </header>

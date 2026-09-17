@@ -3,7 +3,7 @@ import type { Key, Score, Time } from '@core/score/model.ts'
 import { type FormatVariant, parseScoreBlock, serializeScoreBlock } from '@core/formats/csv.ts'
 import { csvGuide } from '@core/formats/csv-guide.ts'
 import { scoreToAbc } from '@core/formats/abc.ts'
-import { scoreToLilypond } from '@core/formats/lilypond.ts'
+import { parseLilypond, scoreToLilypond } from '@core/formats/lilypond.ts'
 
 export type FormatName = 'csv' | 'abc' | 'lilypond'
 export type GuideLevel = 'none' | 'brief' | 'full'
@@ -37,5 +37,6 @@ export const FORMATS: Record<FormatName, ScoreFormat> = {
     name: 'lilypond',
     serialize: s => scoreToLilypond(s),
     guide: (_v, level) => level === 'none' ? undefined : level === 'brief' ? LY_BRIEF : LY_FULL,
+    parse: parseLilypond,
   },
 }

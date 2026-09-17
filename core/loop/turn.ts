@@ -1,4 +1,6 @@
 import type { TypeSafeClient } from '@typesafe-ai/sdk'
+import type { Decider } from '@core/decide/types.ts'
+import { makeClient } from '@core/jev/client.ts'
 import { type Option, type Step, type Turn, optionsFor, turnToNote } from '@core/controller/options.ts'
 import type { Exercise } from '@core/exercises/load.ts'
 import type { Condition } from './conditions.ts'
@@ -17,6 +19,8 @@ export interface StepRecord {
   probabilities: Record<string, number>
   ms: number
   inputTokens: number
+  outputTokens?: number
+  costUsd: number
   model: string
   state: JevState
   instructions: string
@@ -41,6 +45,7 @@ export type LoopEvent =
 
 export interface LoopOptions {
   maxTurns?: number
+  client?: TypeSafeClient // only for requests: 'fanout' (Jev multi-question request)
   stallAfter?: number // end the run when the same score state recurs this many times (default 3; 0 = never)
   condition: Condition
   signal?: AbortSignal
@@ -54,8 +59,8 @@ export function feedbackFor(score: Score): string[] {
   return lines.length ? lines.slice(0, 40) : ['no problems found']
 }
 
-export async function* runLoop(client: TypeSafeClient, ex: Exercise, start: Score, opts: LoopOptions): AsyncGenerator<LoopEvent, void> {
-  if (opts.condition.requests === 'fanout') return yield* runLoopFanout(client, ex, start, opts)
+export async function* runLoop(decider: Decider, ex: Exercise, start: Score, opts: LoopOptions): AsyncGenerator<LoopEvent, void> {
+  if (opts.condition.requests === 'fanout') return yield* runLoopFanout(opts.client ?? makeClient(), ex, start, opts)
   let score = start
   const max = opts.maxTurns ?? 150
   const seen = new Map<string, number>()
@@ -68,13 +73,12 @@ export async function* runLoop(client: TypeSafeClient, ex: Exercise, start: Scor
       if (!o) break
       const state = buildState(ex, score, turn, opts.condition, opts.condition.feedback ? feedbackFor(score) : undefined, recent)
       const q = buildQuestion(o.step, o.options, opts.condition)
-      const t0 = performance.now()
-      const res = await client.systemOne({ state: state as unknown as Record<string, never>, questions: { pick: q } }, { signal: opts.signal })
-      const a = res.answers.pick
+      const criteria = Object.fromEntries(o.options.map(x => [x.key, x.description]))
+      const a = await decider.decide(state, String(q.instructions), criteria, { signal: opts.signal })
       const rec: StepRecord = {
-        step: o.step, options: o.options, choice: a.choice, confidence: a.confidence,
-        probabilities: a.probabilities as Record<string, number>, ms: Math.round(performance.now() - t0),
-        inputTokens: res.usage.input_tokens, model: res.model, state, instructions: String(q.instructions),
+        step: o.step, options: o.options, choice: a.choice, confidence: a.confidence ?? NaN,
+        probabilities: a.probabilities ?? { [a.choice]: 1 }, ms: a.ms,
+        inputTokens: a.inputTokens, outputTokens: a.outputTokens, costUsd: a.costUsd, model: a.model, state, instructions: String(q.instructions),
       }
       steps.push(rec)
       const chosen = o.options.find(x => x.key === a.choice)
@@ -131,7 +135,7 @@ async function* runLoopFanout(client: TypeSafeClient, ex: Exercise, start: Score
       const a = res.answers[st] as { choice: string; confidence: number; probabilities: Record<string, number> }
       const chosen = optionSets[st].find(o => o.key === a.choice)!
       Object.assign(turn, chosen.patch)
-      const rec: StepRecord = { step: st, options: optionSets[st], choice: a.choice, confidence: a.confidence, probabilities: a.probabilities, ms, inputTokens: st === 'voice' ? res.usage.input_tokens : 0, model: res.model, state, instructions: String(questions[st].instructions) }
+      const rec: StepRecord = { step: st, options: optionSets[st], choice: a.choice, confidence: a.confidence, probabilities: a.probabilities, ms, inputTokens: st === 'voice' ? res.usage.input_tokens : 0, costUsd: st === 'voice' ? res.usage.input_tokens * 0.042 / 1e6 : 0, model: res.model, state, instructions: String(questions[st].instructions) }
       steps.push(rec)
       yield { type: 'step', turnN: n, rec, partial: { ...turn } }
     }
