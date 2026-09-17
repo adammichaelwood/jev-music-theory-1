@@ -35,6 +35,25 @@ origins, so a deployed build needs an equivalent proxy.)
 - **condition** picks a preset of prompt levers / strategies; *show experiment
   settings* exposes each lever.
 
+## Deploy (GitHub Pages + Cloudflare Worker)
+
+The static app lives on GitHub Pages; a Cloudflare Worker (`worker/`) is the
+only thing that talks to `api.typesafe.ai`. The Worker:
+
+- passes a user's own key straight through (`API key` in the app header; stored in their browser only);
+- otherwise uses the site key (Worker secret `TYPESAFE_API_KEY`) with **per-IP and global daily caps** (`wrangler.toml` `[vars]`), counted by a Durable Object;
+- only accepts requests from the allowed origins, carrying the app's header, whose body **matches this app's exact request shape** (`worker/shape.ts`), so it can't be used as a general relay.
+
+```sh
+npx wrangler login                                   # once
+grep TYPESAFE_API_KEY .env | cut -d= -f2- | npx wrangler secret put TYPESAFE_API_KEY
+npx wrangler deploy                                  # prints https://jev-chorale-proxy.<you>.workers.dev
+```
+
+Then in the GitHub repo: *Settings → Pages → Source: GitHub Actions*, and
+*Settings → Secrets and variables → Actions → Variables*: `VITE_API_BASE` = the
+Worker URL. Every push to `main` deploys via `.github/workflows/pages.yml`.
+
 ## Headless harness
 
 ```sh

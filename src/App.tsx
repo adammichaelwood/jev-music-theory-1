@@ -4,7 +4,7 @@ import { type Option, type Turn, describeTurn, optionsFor, turnToNote } from './
 import { EXERCISES } from './exercises/index.ts'
 import type { Exercise } from './exercises/load.ts'
 import { grade } from './grader/index.ts'
-import { makeClient } from './jev/client.ts'
+import { describeError, makeClient, setUserApiKey, userApiKey } from './jev/client.ts'
 import { BASELINE, type Condition, PRESETS } from './jev/conditions.ts'
 import { type StepRecord, type TurnRecord, runLoop } from './jev/turn.ts'
 import { type Highlight, ScoreView } from './render/ScoreView.tsx'
@@ -37,6 +37,8 @@ export default function App() {
   const [tab, setTab] = useState<'lab' | 'findings'>('lab')
   const [advanced, setAdvanced] = useState(false)
   const [stats, setStats] = useState({ requests: 0, tokens: 0, ms: 0 })
+  const [apiKey, setApiKey] = useState<string | null>(userApiKey())
+  const [keyOpen, setKeyOpen] = useState(false)
 
   const speedRef = useRef(speedIdx); speedRef.current = speedIdx
   const runRef = useRef(run); runRef.current = run
@@ -44,7 +46,7 @@ export default function App() {
   const playerRef = useRef<ReturnType<typeof makePlayer>>(null)
   const playerEl = useRef<HTMLDivElement>(null)
 
-  const client = useMemo(() => makeClient(), [])
+  const client = useMemo(() => makeClient(), [apiKey])
   const opts = useMemo(() => optionsFor(score, partial, cond), [score, partial, cond])
   const report = useMemo(() => grade(score), [score])
   // violations colored on the score whenever Jev isn't mid-turn
@@ -97,7 +99,7 @@ export default function App() {
         while (runRef.current === 'paused' && !ac.signal.aborted) await sleep(100)
       }
     } catch (e) {
-      if (!ac.signal.aborted) { setError(String(e)); setRun('done') }
+      if (!ac.signal.aborted) { setError(describeError(e)); setRun('done') }
     }
     if (ac.signal.aborted) setRun('idle')
   }
@@ -144,11 +146,20 @@ export default function App() {
             {!PRESETS.some(p => p.name === cond.name) && <option value={cond.name}>{cond.name}</option>}
           </select></label>
           <button className="link" onClick={() => setAdvanced(a => !a)}>{advanced ? 'hide' : 'show'} experiment settings</button>
+          <button className="link" onClick={() => setKeyOpen(k => !k)} title="Optional. Without a key the demo uses a shared key with a daily limit.">{apiKey ? 'using your API key' : 'API key'}</button>
           <span className={`status ${run}`}>
             {run}{error ? ` — ${error}` : ''}{stats.requests ? ` · ${stats.requests} requests · ${stats.tokens.toLocaleString()} tokens · $${(stats.tokens * 0.042 / 1e6).toFixed(4)} · ${(stats.ms / 1000).toFixed(1)}s model time` : ''}
           </span>
         </>}
       </header>
+      {tab === 'lab' && keyOpen && (
+        <div className="advanced keybar">
+          <span>Optional: your own <b>TypeSafe API key</b>. Without one the demo uses a shared key with a daily limit. The key is kept in this browser's localStorage and sent only through the app's proxy to api.typesafe.ai.</span>
+          <input type="password" placeholder="ts-…" defaultValue={apiKey ?? ''} onKeyDown={e => { if (e.key === 'Enter') { const v = (e.target as HTMLInputElement).value.trim(); setUserApiKey(v || null); setApiKey(v || null); setKeyOpen(false) } }} />
+          <button onClick={e => { const v = ((e.currentTarget.previousSibling as HTMLInputElement).value).trim(); setUserApiKey(v || null); setApiKey(v || null); setKeyOpen(false) }}>save</button>
+          {apiKey && <button onClick={() => { setUserApiKey(null); setApiKey(null); setKeyOpen(false) }}>forget</button>}
+        </div>
+      )}
       {tab === 'lab' && advanced && (
         <div className="advanced">
           <label><input type="checkbox" checked={cond.accidentals === 'unicode'} onChange={e => setC({ accidentals: e.target.checked ? 'unicode' : 'words' })} /> ♯♭ unicode accidentals</label>

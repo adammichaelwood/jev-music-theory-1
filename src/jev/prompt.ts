@@ -30,9 +30,8 @@ export function formatGuide(v: FormatVariant, level: Condition['formatGuide'] = 
   ].filter(Boolean).join(' ')
 }
 
-export const TASK_HISTORY = ' `recent_moves` lists the notes you wrote most recently, oldest first.'
-export const TASK_FEEDBACK = ' `feedback` lists the problems a grader currently finds in `score`; fix them.'
-export const TASK = 'You are completing an undergraduate music-theory exercise in four-part (SATB) common-practice harmony. You edit the score one note at a time using a controller: choose a voice, a measure, a beat, a pitch, an octave and a duration. The note you write replaces anything you previously wrote at that place in that voice. Notes given by the exercise cannot be changed. The score already contains everything decided so far.'
+import { TASK, TASK_FEEDBACK, TASK_HISTORY } from './task.ts'
+export { TASK }
 
 export interface JevState {
   task: string

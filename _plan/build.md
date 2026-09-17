@@ -80,8 +80,10 @@ output, `_plan/` for these docs.
 - [x] Pilots + matrix: 228 runs across 22 conditions; round two on chorales stopped at your request.
 - [x] `merged-pitch`, `windowed`, `fanout`, `history` implemented; `windowed` only piloted (n=1).
 
-## Later / deployment
-- Cloudflare Worker proxy + GH Pages build with user-entered key.
+## Phase 10 — Deployment (2026-09-17)
+- [x] Cloudflare Worker proxy (`worker/`): BYOK pass-through, site key with per-IP/global daily caps (Durable Object), Origin + app-header + request-shape checks. Tested locally with `wrangler dev`.
+- [x] App: optional API key field (localStorage), `VITE_API_BASE`, GH Pages base path, Pages workflow.
+- [ ] Cloudflare account + `wrangler deploy` + repo variable — needs you (see README).
 - Fan-out variant of the turn (all sub-steps in one request).
 
 ## Phase 9 — Demo polish (2026-09-17)

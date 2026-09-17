@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const key = env.TYPESAFE_API_KEY
   return {
+    base: env.GH_PAGES ? '/jev-music-theory-1/' : '/',
     plugins: [react()],
     server: {
       proxy: {

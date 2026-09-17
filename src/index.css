@@ -112,3 +112,6 @@ main.findings { display: block; max-width: 880px; margin: 0 auto; padding: 16px 
 .md p, .md li { line-height: 1.6; color: #c7cddb; } .md b { color: var(--text); }
 .md code { background: var(--panel2); padding: 0 4px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #dfe6f5; }
 .md table { border-collapse: collapse; margin: 8px 0; font-size: 12px; } .md th, .md td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.keybar { align-items: center; }
+.keybar input { font: inherit; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; width: 320px; font-family: 'JetBrains Mono', monospace; }
+.keybar span { max-width: 520px; line-height: 1.4; }
