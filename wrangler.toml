@@ -4,8 +4,8 @@ compatibility_date = "2026-09-01"
 
 [vars]
 ALLOWED_ORIGINS = "https://adammichaelwood.com,https://adammichaelwood.github.io,http://localhost:5173,http://localhost:4173"
-PER_IP_DAILY = "1500"    # ~10 finished runs, or ~3 worst-case looping runs, per address per day
-GLOBAL_DAILY = "25000"   # ~$1.30/day at ~1,300 tokens per request
+PER_IP_DAILY = "12000"   # ~4.5 hours of piano (3 requests per chord) or ~80 chorale runs per address per day; ≈ $0.60 worst case
+GLOBAL_DAILY = "60000"   # ~$3/day worst case at ~1,300 tokens per request
 
 [[durable_objects.bindings]]
 name = "LIMITER"
