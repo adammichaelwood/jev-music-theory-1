@@ -149,3 +149,6 @@ main.pianotab { display: block; max-width: 1100px; margin: 0 auto; padding: 16px
 .pianoctl .status { flex-basis: 100%; margin-left: 0; }
 .navsep { display: inline-block; width: 1px; height: 18px; background: var(--line); margin: 0 6px; vertical-align: middle; }
 main.pianotab .about { margin-bottom: 12px; }
+.docnav { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 16px; }
+.docnav button { font-size: 12px; color: var(--muted); }
+.docnav button.on { color: var(--text); border-color: var(--jev); background: #1a2236; }
