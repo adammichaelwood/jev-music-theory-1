@@ -41,7 +41,7 @@ export default function App() {
   const [error, setError] = useState<string>()
   const [tab, setTab] = useState<'lab' | 'piano' | 'findings'>('lab')
   const [advanced, setAdvanced] = useState(false)
-  const [doc, setDoc] = useState<'round2' | 'round1' | 'quiz' | 'piano'>('round2')
+  const [doc, setDoc] = useState<'round2' | 'round1' | 'quiz' | 'piano'>('round1')
   const [stats, setStats] = useState({ requests: 0, tokens: 0, ms: 0, cost: 0 })
   const [apiKey, setApiKey] = useState<string | null>(userApiKey())
   const [keyOpen, setKeyOpen] = useState(false)
@@ -189,8 +189,8 @@ export default function App() {
       {tab === 'piano' ? <PianoTab apiKeyVersion={apiKey ? 1 : 0} /> : tab === 'findings' ? (
         <main className="findings">
           <div className="docnav">
-            <button className={doc === 'round2' ? 'on' : ''} onClick={() => setDoc('round2')}>Round 2 — formats, theory quiz, Claude vs Jev, framings</button>
             <button className={doc === 'round1' ? 'on' : ''} onClick={() => setDoc('round1')}>Round 1 — the controller lab</button>
+            <button className={doc === 'round2' ? 'on' : ''} onClick={() => setDoc('round2')}>Round 2 — formats, theory quiz, Claude vs Jev, framings</button>
             <button className={doc === 'quiz' ? 'on' : ''} onClick={() => setDoc('quiz')}>Quiz results (tables)</button>
             <button className={doc === 'piano' ? 'on' : ''} onClick={() => setDoc('piano')}>Piano notes</button>
           </div>
