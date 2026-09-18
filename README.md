@@ -1,85 +1,113 @@
 # Jev Chorale Lab
 
-An experiment: can **Jev** — TypeSafe's System One decision model, which
-answers typed multiple-choice questions with calibrated probabilities and
-never generates text — do undergraduate music theory?
+**Live demo: https://adammichaelwood.com/jev-music-theory-1/**
 
-Jev works SATB part-writing exercises (complete a cadence, realize a figured
-bass, harmonize a chorale melody) through a **controller**: each turn it
-chooses a voice, a measure, a beat, a pitch, an octave and a duration, seeing
-the whole score as plain text every time. Code never filters its options for
-musical reasons. A rule-based grader scores the result, and a headless harness
-runs exercises × prompt conditions × strategies × repeats into a ledger.
+An experiment in two parts, done in one day:
 
-**Live demo:** https://adammichaelwood.com/jev-music-theory-1/
+1. **Does a decision model know music theory?** [Jev](https://docs.typesafe.ai)
+   is TypeSafe's "System One" model: it answers typed multiple-choice questions
+   with calibrated probabilities and never generates text. We gave it
+   undergraduate SATB part-writing exercises and a *controller* — pick a voice,
+   a measure, a beat, a pitch, an octave, a duration — and let it work, with no
+   musical hints from code and a rule-based grader marking the result
+   afterwards. Then we varied everything we could think of (score formats,
+   prompt wording, strategies, framings), wrote a generated theory quiz, and
+   compared it with Claude Haiku 4.5, Sonnet 5 and Opus 5 on accuracy and cost.
+2. **Jev plays piano.** A never-ending stream of mellow Rhodes chords, three
+   decisions each (root → quality → bass tone), voiced and arpeggiated by code.
+   No scientific value to speak of; we built it because it was fun.
 
-**Findings:** round 1 [`_plan/findings.md`](_plan/findings.md) (also the *findings*
-tab in the app); round 2 — formats, theory quiz, Claude vs Jev, framings —
-[`_plan/findings-2.md`](_plan/findings-2.md). Numbers: [`_plan/results.md`](_plan/results.md),
-[`_plan/quiz-results.md`](_plan/quiz-results.md).
-Design and decision log: [`_plan/main.md`](_plan/main.md).
+**This whole repository was vibecoded.** The plan, the code, the experiments,
+the write-ups, the videos and this README were produced by Claude Code
+(Claude Opus 5) working autonomously from a conversation, with a human
+supplying ideas, API keys, and taste. Read it in that light: it is an
+experiment about an AI model, run by an AI model. The full planning trail —
+including the design questions the agent asked and then answered itself — is
+in [`_plan/`](_plan/).
+
+## What we found (short version)
+
+Full write-ups: [round 1](_plan/findings.md) · [round 2](_plan/findings-2.md) ·
+[piano notes](_plan/findings-piano.md), also under the *findings* tab of the demo.
+
+- Jev's music theory is **lexical**. It knows the vocabulary — scale degrees,
+  cadence types, secondary dominants, enharmonics — and can match a pitch to a
+  chord spelled out beside it. It cannot compute relations between spelled
+  pitches (Roman numeral from pitches: chance level; the chordal seventh of
+  V7: 0%, it answers the seventh scale degree), and it has no representation
+  of motion between chords, so voice leading is out of reach.
+- **The score format wasn't the problem.** CSV, ABC and LilyPond give the same
+  failure profile. What helped was **framing**: showing only the previous
+  beat, this beat and the next — or one sentence of prose — halved the errors
+  and turned the melody-harmonization exercises from never-finishing into
+  70–91% recognizable chords, at a third of the cost.
+- **Its characteristic failure is the fixed point**: once a score (or a chord
+  progression) reaches a state it likes, a deterministic model with no memory
+  of its own moves repeats or oscillates forever.
+- **Against Claude**, per step at low effort Sonnet 5 makes a third of Jev's
+  errors at ~50× the cost and ~10× the time; Haiku 4.5 is roughly Jev's
+  equal. Given the whole exercise and minutes to think, Sonnet 5 and Opus 5
+  produce near-perfect and sometimes perfect harmonizations for $0.2–0.7.
+  Jev's niche is $0.001 and four seconds per exercise.
+- Opus 5's safety classifier refuses the CSV-format chorale prompt as
+  "cyber" content, every time.
 
 ## Run it
 
 ```sh
 npm install
-cp .env.example .env        # put your TYPESAFE_API_KEY in .env
+cp .env.example .env        # TYPESAFE_API_KEY=… (and ANTHROPIC_API_KEY=… for the Claude experiments)
 npm run dev                 # http://localhost:5173
 ```
 
 The Vite dev server proxies `/api/*` to `api.typesafe.ai` and injects the key,
-so it never reaches the browser. (`api.typesafe.ai` rejects browser CORS
-origins, so a deployed build needs an equivalent proxy.)
+so it never reaches the browser. The deployed site uses a Cloudflare Worker
+(`worker/`) that does the same with a shared key and daily caps, or passes
+through a visitor's own key.
 
-- **▶ start Jev** runs the loop; the speed slider paces it; the controller on
-  the right shows every option with Jev's probability, the piano lights up
-  for pitch choices, and the turn log expands to per-step distributions.
-- **human mode** lets you enter notes with the same controller, then hand the
-  score to Jev.
-- **condition** picks a preset of prompt levers / strategies; *show experiment
-  settings* exposes each lever.
-
-## Deploy (GitHub Pages + Cloudflare Worker)
-
-The static app lives on GitHub Pages; a Cloudflare Worker (`worker/`) is the
-only thing that talks to `api.typesafe.ai`. The Worker:
-
-- passes a user's own key straight through (`API key` in the app header; stored in their browser only);
-- otherwise uses the site key (Worker secret `TYPESAFE_API_KEY`) with **per-IP and global daily caps** (`wrangler.toml` `[vars]`), counted by a Durable Object;
-- only accepts requests from the allowed origins, carrying the app's header, whose body **matches this app's exact request shape** (`worker/shape.ts`), so it can't be used as a general relay.
-
-```sh
-npx wrangler login                                   # once
-grep TYPESAFE_API_KEY .env | cut -d= -f2- | npx wrangler secret put TYPESAFE_API_KEY
-npx wrangler deploy                                  # prints https://jev-chorale-proxy.<you>.workers.dev
-```
-
-Then in the GitHub repo: *Settings → Pages → Source: GitHub Actions*, and
-*Settings → Secrets and variables → Actions → Variables*: `VITE_API_BASE` = the
-Worker URL. Every push to `main` deploys via `.github/workflows/pages.yml`.
-
-## Headless experiments
+### Headless experiments
 
 ```sh
 npx tsx experiments/lab/run.ts --ex 001,002 --cond baseline,slice --decider jev,claude-sonnet --repeats 3 --jobs 3
-npx tsx core/harness/report.ts          # regenerates _plan/results.md from runs/index.jsonl
+npx tsx core/harness/report.ts                       # → _plan/results.md
 npx tsx experiments/quiz/run.ts --decider jev,claude-haiku --per 8 && npx tsx experiments/quiz/report.ts
 npx tsx experiments/oneshot/run.ts --ex 001 --model claude-sonnet --format csv
-npx tsx scripts/grade.ts runs/<file>.json
-npx tsx scripts/kern2ex.ts chor001.krn --phrases 1 --given S,B --id 020   # Bach chorale → exercise
-npx tsx scripts/record.ts video && python3 scripts/mixaudio.py video <piano-samples-dir>   # demo video (Playwright + ffmpeg)
+npx tsx experiments/piano/run.ts --n 60 --sample --temp 0.4
+npx tsx scripts/kern2ex.ts chor001.krn --phrases 1 --given S,B --id 020   # Bach chorale (Humdrum) → exercise
+npx tsx scripts/record.ts video && python3 scripts/mixaudio.py video <samples>   # demo videos
 ```
+
+## Deploy
+
+```sh
+npx wrangler login && npx wrangler secret put TYPESAFE_API_KEY && npx wrangler deploy
+gh variable set VITE_API_BASE --body "https://<your-worker>.workers.dev"   # then push to main
+```
+
+Pages builds from `.github/workflows/pages.yml`; the Worker's caps are the
+`[vars]` in `wrangler.toml`.
 
 ## Layout
 
 | path | what |
 |---|---|
-| `exercises/*.md` | exercises: YAML front matter + instructions + score block in the chorale CSV format (`_plan/format.md`) |
-| `src/score/` | score model, parser/serializer with format variants |
-| `src/controller/` | the option sets Jev picks from (mechanical filtering + strategy ordering only) |
-| `src/jev/` | prompt/state builders, conditions, the turn loop (sequential and fan-out), SDK client |
-| `src/grader/` | voice-leading grader: parallels, crossing, overlap, spacing, range, chord ID + Roman numerals, doubling, figures, tendency tones |
-| `src/render/` | score → ABC → abcjs, with per-note classes for highlighting |
-| `src/ui/` | controller (piano), turn log, grade panel, findings renderer |
-| `scripts/` | harness, report, grader CLI, kern converter |
-| `runs/` | run logs and `index.jsonl` ledger (gitignored) |
+| `core/score/`, `core/formats/` | score model; CSV / ABC / LilyPond presentations (`_plan/format.md`) |
+| `core/controller/` | the option sets the model picks from; location/option policies |
+| `core/loop/` | conditions (every experimental lever), prompt/state builders, the turn loop |
+| `core/decide/` | `Decider` interface: Jev, Claude (Haiku/Sonnet/Opus) |
+| `core/grader/` | voice-leading grader with Roman-numeral chord identification |
+| `core/quiz/` | generated theory quiz (19 kinds, 5 tiers, answers computed) |
+| `core/piano/` | chord vocabulary, voicing, stream analysis |
+| `experiments/` | headless runners: lab, quiz, one-shot, piano |
+| `src/` | the demo app (lab, findings, piano tabs) |
+| `worker/` | Cloudflare Worker proxy with caps and request-shape checks |
+| `exercises/` | 12 exercises (3 written, 1 diagnostic, 8 Bach chorale phrases) |
+| `_plan/` | plan, decision log, self-answered questions, ideas, write-ups, result tables |
+| `scripts/` | grader CLI, kern converter, video recorders and audio mixers |
+
+## Credits
+
+Bach chorales from [craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales)
+(Humdrum kern). Notation and playback via [abcjs](https://github.com/paulrosen/abcjs)
+and the FluidR3 soundfonts hosted by Paul Rosen. Model: TypeSafe `jev-1.13.0`;
+comparisons on Anthropic's Claude API.

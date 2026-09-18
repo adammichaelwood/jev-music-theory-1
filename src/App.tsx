@@ -134,6 +134,7 @@ export default function App() {
         <h1>Jev Chorale Lab</h1>
         <nav><button className={tab === 'lab' ? 'on' : ''} onClick={() => setTab('lab')}>lab</button><button className={tab === 'findings' ? 'on' : ''} onClick={() => setTab('findings')}>findings</button><span className="navsep" /><button className={tab === 'piano' ? 'on' : ''} onClick={() => setTab('piano')}>piano</button></nav>
         {tab === 'piano' && <span className="tagline">Jev improvises: root → quality → bass, three decisions per chord, voiced and played by code</span>}
+        <a className="repolink" href="https://github.com/adammichaelwood/jev-music-theory-1" target="_blank" rel="noreferrer" title="source, plan, write-ups — entirely vibecoded">github ↗</a>
         {tab === 'lab' && <>
           <select value={ex.id} onChange={e => loadExercise(EXERCISES.find(x => x.id === e.target.value)!)}>
             {EXERCISES.map(e => <option key={e.id} value={e.id}>{e.id.slice(0, 3)} · {e.title} (level {e.difficulty})</option>)}
