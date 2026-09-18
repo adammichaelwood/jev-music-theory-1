@@ -11,13 +11,23 @@ const isBlack = (m: number) => [1, 3, 6, 8, 10].includes(m % 12)
 
 const INSTRUMENTS: [number, string][] = [[4, 'electric piano (Rhodes)'], [5, 'electric piano 2'], [0, 'acoustic grand'], [2, 'electric grand'], [11, 'vibraphone'], [89, 'warm pad']]
 
-/** arpeggiate: bass, then the two left-hand tones, then the four right-hand tones, `gapMs` apart; every note sustains to the end */
+/** arpeggiate: bass, then the two left-hand tones, then the four right-hand tones, `gapMs` apart; every note sustains to the end.
+ *  abcjs's playEvent starts every pitch at time 0, so build the sequence by hand with per-track start offsets. */
 function playChord(v: Voicing, instrument: number, holdMs: number, gapMs: number) {
   audioContext()
   const order = [v.bass, ...v.lh, ...v.rh]
-  const total = holdMs + gapMs * order.length + 600
-  const pitches = order.map((p, i) => ({ pitch: p, instrument, duration: (total - i * gapMs) / 2000, volume: i === 0 ? 78 : i < 3 ? 60 : 66, start: (i * gapMs) / 2000, gap: 0 }))
-  return abcjs.synth.playEvent(pitches, undefined, 2000).catch(() => {})
+  const MS_PER_MEASURE = 2000
+  const total = holdMs + gapMs * order.length + 800
+  const seq = new abcjs.synth.SynthSequence() as abcjs.SynthSequenceClass & { starts: number[] }
+  order.forEach((pitch, i) => {
+    const track = seq.addTrack() as unknown as number // the runtime returns the track index
+    seq.setInstrument(track, instrument)
+    seq.starts[track] = (i * gapMs) / MS_PER_MEASURE // rest before this note
+    seq.appendNote(track, pitch, (total - i * gapMs) / MS_PER_MEASURE, i === 0 ? 78 : i < 3 ? 60 : 66, 0)
+  })
+  const synth = new abcjs.synth.CreateSynth()
+  ;(window as unknown as { __lastSynth?: unknown }).__lastSynth = synth // debug hook
+  return synth.init({ sequence: seq as unknown as abcjs.AudioSequence, millisecondsPerMeasure: MS_PER_MEASURE }).then(() => synth.prime()).then(() => synth.start()).catch(() => {})
 }
 
 export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
