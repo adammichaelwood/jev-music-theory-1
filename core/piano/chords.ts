@@ -56,36 +56,44 @@ export function bassOptions(root: Root, quality: string): { key: string; semis: 
 }
 
 // ---- voicing ----
-export interface Voicing { bass: number; upper: number[] } // MIDI numbers
-const RH_LO = 60, RH_HI = 79 // C4..G5 for the top of the right hand cluster
-/** basic block-chord voicing: bass low, right hand = 3rd/7th (guide tones) + one or two colour tones, each moved to the nearest available tone */
+export interface Voicing { bass: number; lh: number[]; rh: number[] } // MIDI numbers; lh = two tones above the bass, rh = four
+const nearest = (pc: number, target: number, lo: number, hi: number, taken: number[] = []) => {
+  const c: number[] = []; for (let m = lo; m <= hi; m++) if (m % 12 === pc && !taken.includes(m)) c.push(m)
+  return c.sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0]
+}
+/** open voicing: bass low; two left-hand tones at least a fifth above it; four right-hand tones spread over C4–C6, no two closer than a third */
 export function voice(c: Chord, prev: Voicing | null): Voicing {
   const rootPc = pitchClass(c.root)
   const iv = QUALITIES[c.quality].iv
-  const bassPc = (rootPc + c.bassInterval) % 12
-  // bass in octave 2–3, nearest to previous bass (default ~E2..D3 band)
-  const bassTarget = prev ? prev.bass : 43
-  let bass = 36 + ((bassPc - 36) % 12 + 12) % 12 // lowest >= C2
-  while (bass + 12 <= 55 && Math.abs(bass + 12 - bassTarget) < Math.abs(bass - bassTarget)) bass += 12
-  if (bass < 38) bass += 12
-  // right hand: the guide tones plus the highest extensions, 3–4 notes
-  const third = iv.find(x => x === 3 || x === 4 || x === 5), seventh = iv.find(x => x === 10 || x === 11 || x === 9)
-  const colours = iv.filter(x => x !== 0 && x !== third && x !== seventh && x !== 7).slice(-2)
-  const wanted = [third, seventh, ...colours].filter((x): x is number => x !== undefined)
-  if (wanted.length < 3) wanted.push(7)
-  const pcs = wanted.map(x => (rootPc + x) % 12)
-  const prevUpper = prev?.upper ?? [64, 67, 71]
-  const upper: number[] = []
-  for (const pc of pcs) {
-    // nearest pitch of this class to any previous upper voice, within band
-    const cands: number[] = []; for (let m = RH_LO; m <= RH_HI; m++) if (m % 12 === pc) cands.push(m)
-    const best = cands.sort((a, b) => Math.min(...prevUpper.map(p => Math.abs(p - a))) - Math.min(...prevUpper.map(p => Math.abs(p - b))))[0]
-    if (best !== undefined && !upper.includes(best)) upper.push(best)
+  const pcOf = (s: number) => (rootPc + s) % 12
+  const third = iv.find(x => x === 3 || x === 4 || x === 5), seventh = iv.find(x => x === 10 || x === 11) ?? iv.find(x => x === 9)
+  const fifth = iv.find(x => x === 6 || x === 7 || x === 8), exts = iv.filter(x => x >= 12)
+  // bass: nearest octave of the bass tone to the previous bass, within E2..D3
+  const bassPc = pcOf(c.bassInterval)
+  let bass = nearest(bassPc, prev?.bass ?? 43, 40, 52)!
+  // left hand: two tones a fifth or more above the bass — prefer 7th and 3rd (guide tones), else 5th, else root
+  const lhWant = [seventh, third, fifth, 0].filter((x): x is number => x !== undefined).map(pcOf).filter(pc => pc !== bassPc).slice(0, 2)
+  const lh: number[] = []
+  lhWant.forEach((pc, i) => { const t = prev?.lh[i] ?? bass + 10 + i * 5; const m = nearest(pc, t, bass + 7, bass + 22, lh); if (m !== undefined) lh.push(m) })
+  lh.sort((a, b) => a - b)
+  if (lh.length === 2 && lh[1] - lh[0] < 3) lh[1] = nearest(lh[1] % 12, lh[1] + 12, lh[0] + 3, bass + 24, lh) ?? lh[1]
+  // right hand: 3rd, 7th, an extension (or the 5th), and the root or 5th — stacked upward from a bottom note near the
+  // previous right hand, each next tone at least a third above the last, so the four notes spread over an octave or more
+  const rhPcs = [...new Set([third, seventh, exts[exts.length - 1] ?? fifth, fifth !== undefined && exts.length ? fifth : 0, fifth, 0].filter((x): x is number => x !== undefined).map(pcOf))].slice(0, 4)
+  const lo = Math.max(60, (lh[lh.length - 1] ?? bass) + 3)
+  const bottomTarget = Math.max(lo, Math.min(prev?.rh[0] ?? 63, 70))
+  // try every stacking order; keep the one with the smallest span that starts nearest the previous bottom note
+  const perms = (xs: number[]): number[][] => xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map(p => [x, ...p]))
+  let rh: number[] = [], best = Infinity
+  for (const order of perms(rhPcs)) {
+    const bottom = nearest(order[0], bottomTarget, lo, lo + 11)!
+    const stack = [bottom]
+    for (const pc of order.slice(1)) { const cur = stack[stack.length - 1]; let d = (pc - cur % 12 + 12) % 12; if (d < 3) d += 12; stack.push(cur + d) }
+    const score = (stack[stack.length - 1] - stack[0]) + Math.abs(bottom - bottomTarget) * 0.5 + (stack[stack.length - 1] > 86 ? 50 : 0)
+    if (score < best) { best = score; rh = stack }
   }
-  upper.sort((a, b) => a - b)
-  // avoid a minor-ninth clash between bass and the lowest RH note
-  if (upper.length && upper[0] - bass < 7) { const u = upper.shift()!; upper.push(u + 12); upper.sort((a, b) => a - b) }
-  return { bass, upper }
+  rh.sort((a, b) => a - b)
+  return { bass, lh, rh }
 }
 
 // ---- analysis of a chord stream ----

@@ -3,15 +3,20 @@ import abcjs from 'abcjs'
 import { audioContext } from '../audio.ts'
 import { jevDecider } from '@core/decide/jev.ts'
 import { describeError, makeClient } from '@core/jev/client.ts'
-import { QUALITY_KEYS, ROOTS, rootKey, rootSymbol, type Chord } from '@core/piano/chords.ts'
+import { QUALITIES, QUALITY_KEYS, ROOTS, rootKey, rootSymbol, type Chord, type Voicing } from '@core/piano/chords.ts'
 import { DEFAULT_VIBE, type ChordRecord, type PianoStepRecord, pianoLoop, streamStats } from '@core/piano/loop.ts'
 
 const LO = 36, HI = 84 // C2..C6 on the drawn keyboard
 const isBlack = (m: number) => [1, 3, 6, 8, 10].includes(m % 12)
 
-function playChord(v: { bass: number; upper: number[] }, ms: number) {
+const INSTRUMENTS: [number, string][] = [[4, 'electric piano (Rhodes)'], [5, 'electric piano 2'], [0, 'acoustic grand'], [2, 'electric grand'], [11, 'vibraphone'], [89, 'warm pad']]
+
+/** arpeggiate: bass, then the two left-hand tones, then the four right-hand tones, `gapMs` apart; every note sustains to the end */
+function playChord(v: Voicing, instrument: number, holdMs: number, gapMs: number) {
   audioContext()
-  const pitches = [v.bass, ...v.upper].map((p, i) => ({ pitch: p, instrument: 0, duration: ms / 2000, volume: i === 0 ? 75 : 62, start: 0, gap: 0 }))
+  const order = [v.bass, ...v.lh, ...v.rh]
+  const total = holdMs + gapMs * order.length + 600
+  const pitches = order.map((p, i) => ({ pitch: p, instrument, duration: (total - i * gapMs) / 2000, volume: i === 0 ? 78 : i < 3 ? 60 : 66, start: (i * gapMs) / 2000, gap: 0 }))
   return abcjs.synth.playEvent(pitches, undefined, 2000).catch(() => {})
 }
 
@@ -20,6 +25,13 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
   const [hold, setHold] = useState(4)
   const [noRepeat, setNoRepeat] = useState(true)
   const [temp, setTemp] = useState(0.4) // 0 = always Jev's top choice
+  const [instrument, setInstrument] = useState(4)
+  const [roots, setRoots] = useState<Set<string>>(() => new Set(ROOTS.map(rootKey)))
+  const [qualities, setQualities] = useState<Set<string>>(() => new Set(QUALITY_KEYS))
+  const rootsRef = useRef(roots); rootsRef.current = roots
+  const qualsRef = useRef(qualities); qualsRef.current = qualities
+  const instRef = useRef(instrument); instRef.current = instrument
+  const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>, k: string) => set(prev => { const n = new Set(prev); if (n.has(k)) { if (n.size > 1) n.delete(k) } else n.add(k); return n })
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string>()
   const [chords, setChords] = useState<ChordRecord[]>([])
@@ -36,7 +48,7 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
     setRunning(true); setError(undefined); setChords([]); setPartial({}); setStepRecs({}); setDeciding('root')
     let lastPlay = 0
     try {
-      const gen = pianoLoop(jevDecider(client), { vibe, signal: ac.signal, noRepeat, sample: temp > 0, temperature: temp })
+      const gen = pianoLoop(jevDecider(client), { vibe, signal: ac.signal, noRepeat, sample: temp > 0, temperature: temp, get roots() { return [...rootsRef.current] }, get qualities() { return [...qualsRef.current] } })
       for (;;) {
         const { value: ev, done } = await gen.next()
         if (done || ac.signal.aborted) break
@@ -46,9 +58,9 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
           if (wait) await sleep(wait, ac.signal)
           if (ac.signal.aborted) break
           lastPlay = Date.now()
-          void playChord(ev.rec.voicing, holdRef.current * 1000 + 800)
-          setChords(c => [...c, ev.rec]); setPartial({}); setDeciding('root')
-          await sleep(Math.max(300, holdRef.current * 400), ac.signal) // let the chord breathe before deciding the next one
+          const gap = Math.min(520, Math.max(160, holdRef.current * 1000 / 9))
+          void playChord(ev.rec.voicing, instRef.current, holdRef.current * 1000, gap)
+          setChords(c => [...c, ev.rec]); setPartial({}); setDeciding('root') // the next chord's first call goes out as the bass note sounds
         }
       }
     } catch (e) { if (!ac.signal.aborted) setError(describeError(e)) }
@@ -61,7 +73,7 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
   const stats = useMemo(() => streamStats(chords), [chords])
   const probs = (step: 'root' | 'quality' | 'bass') => stepRecs[step]?.decision.probabilities
   const chosen = (step: 'root' | 'quality' | 'bass') => stepRecs[step]?.decision.choice
-  const lit = new Map<number, 'bass' | 'upper'>(); if (current) { lit.set(current.voicing.bass, 'bass'); current.voicing.upper.forEach(u => lit.set(u, 'upper')) }
+  const lit = new Map<number, 'bass' | 'lh' | 'rh'>(); if (current) { lit.set(current.voicing.bass, 'bass'); current.voicing.lh.forEach(u => lit.set(u, 'lh')); current.voicing.rh.forEach(u => lit.set(u, 'rh')) }
   const whites = Array.from({ length: HI - LO + 1 }, (_, i) => LO + i).filter(m => !isBlack(m))
   const wW = 100 / whites.length
 
@@ -73,6 +85,7 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
           {!running ? <button className="primary" onClick={start}>▶ play</button> : <button onClick={stop}>■ stop</button>}
           <label>hold <input type="range" min={2} max={10} step={0.5} value={hold} onChange={e => setHold(+e.target.value)} /> {hold}s</label>
           <label title="withhold the previous chord's quality when the same root is chosen again"><input type="checkbox" checked={noRepeat} disabled={running} onChange={e => setNoRepeat(e.target.checked)} /> no identical repeats</label>
+          <label>sound <select value={instrument} onChange={e => setInstrument(+e.target.value)}>{INSTRUMENTS.map(([i, n]) => <option key={i} value={i}>{n}</option>)}</select></label>
           <label title="0 = always Jev's top choice; higher = sample from its probability distribution, sharpened less">adventure <input type="range" min={0} max={1} step={0.1} value={temp} onChange={e => setTemp(+e.target.value)} /> {temp === 0 ? 'top choice' : `T=${temp}`}</label>
           <span className="status">{running ? 'playing' : chords.length ? 'stopped' : 'idle'}{error ? ` — ${error}` : ''}{chords.length ? ` · ${chords.length} chords · $${stats.costUsd.toFixed(4)} · ${Math.round(stats.msPerChord)} ms/chord` : ''}</span>
         </div>
@@ -80,7 +93,7 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
 
       <div className="nowplaying">
         <div className="bigchord">{current ? current.symbol : '—'}</div>
-        <div className="chordmeta">{current ? <>{current.transition ?? 'opening'} · key feels like <b>{current.keyEstimate}</b></> : 'press play'}</div>
+        <div className="chordmeta">{current ? <>{current.transition ?? 'opening'} · key feels like <b>{current.keyEstimate}</b>{current.escaping ? <span className="escape"> · escaping a loop (T={current.temperature.toFixed(2)})</span> : null}</> : 'press play'}</div>
         <div className="deciding">{deciding ? <>deciding <b>{deciding}</b><span className="dots" /></> : running ? 'holding…' : ''}{partial.root ? ` · ${rootSymbol(partial.root)}${partial.quality ?? ''}` : ''}</div>
       </div>
 
@@ -93,8 +106,8 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
       </svg>
 
       <div className="steps3">
-        <StepRow title="ROOT" keys={ROOTS.map(rootKey)} labels={ROOTS.map(rootSymbol)} probs={probs('root')} chosen={chosen('root')} active={deciding === 'root'} />
-        <StepRow title="QUALITY" keys={QUALITY_KEYS} probs={probs('quality')} chosen={chosen('quality')} active={deciding === 'quality'} />
+        <StepRow title="ROOT" hint="click to enable / disable" keys={ROOTS.map(rootKey)} labels={ROOTS.map(rootSymbol)} probs={probs('root')} chosen={chosen('root')} active={deciding === 'root'} enabled={roots} onToggle={k => toggle(setRoots, k)} />
+        <StepRow title="QUALITY" hint="click to enable / disable" keys={QUALITY_KEYS} titles={QUALITY_KEYS.map(k => QUALITIES[k].describe)} probs={probs('quality')} chosen={chosen('quality')} active={deciding === 'quality'} enabled={qualities} onToggle={k => toggle(setQualities, k)} />
         <StepRow title="BASS" keys={stepRecs.bass ? Object.keys(stepRecs.bass.options) : []} probs={probs('bass')} chosen={chosen('bass')} active={deciding === 'bass'} />
       </div>
 
@@ -110,13 +123,13 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
   )
 }
 
-function StepRow({ title, keys, labels, probs, chosen, active }: { title: string; keys: string[]; labels?: string[]; probs?: Record<string, number>; chosen?: string; active: boolean }) {
+function StepRow({ title, hint, keys, labels, titles, probs, chosen, active, enabled, onToggle }: { title: string; hint?: string; keys: string[]; labels?: string[]; titles?: string[]; probs?: Record<string, number>; chosen?: string; active: boolean; enabled?: Set<string>; onToggle?: (k: string) => void }) {
   return (
     <div className={`steprow ${active ? 'active' : ''}`}>
-      <div className="steptitle">{title}{active && <span className="dots" />}</div>
+      <div className="steptitle">{title}{active && <span className="dots" />}{hint && <span className="hint"> · {hint}</span>}</div>
       <div className="options">
-        {keys.map((k, i) => <button key={k} className={`opt ${chosen === k ? 'chosen' : ''}`} disabled style={probs ? { '--p': probs[k] ?? 0 } as React.CSSProperties : undefined}>
-          <span className="bar" /><span className="optkey">{labels?.[i] ?? k}</span>{probs && <span className="pct">{((probs[k] ?? 0) * 100).toFixed(0)}%</span>}
+        {keys.map((k, i) => <button key={k} className={`opt ${chosen === k ? 'chosen' : ''} ${enabled && !enabled.has(k) ? 'off' : ''}`} disabled={!onToggle} title={titles?.[i]} onClick={() => onToggle?.(k)} style={probs && probs[k] !== undefined ? { '--p': probs[k] } as React.CSSProperties : undefined}>
+          <span className="bar" /><span className="optkey">{labels?.[i] ?? k}</span>{probs && probs[k] !== undefined && <span className="pct">{(probs[k] * 100).toFixed(0)}%</span>}
         </button>)}
       </div>
     </div>

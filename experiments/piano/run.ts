@@ -12,7 +12,7 @@ for await (const ev of pianoLoop(d, { vibe, maxChords: n, sample: args.includes(
   if (ev.type !== 'chord') continue
   recs.push(ev.rec)
   const top = (s: typeof ev.rec.steps[number]) => s.decision.probabilities ? Object.entries(s.decision.probabilities).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, p]) => `${k} ${(p * 100).toFixed(0)}%`).join(', ') : `${s.decision.choice} (conf ${s.decision.confidence?.toFixed(2)})`
-  console.log(`${String(ev.rec.n).padStart(3)} ${ev.rec.symbol.padEnd(12)} ${(ev.rec.transition ?? '').padEnd(24)} ${ev.rec.keyEstimate.padEnd(9)} bass ${ev.rec.voicing.bass} rh ${ev.rec.voicing.upper.join(' ')}   root[${top(ev.rec.steps[0])}] quality[${top(ev.rec.steps[1])}]`)
+  console.log(`${String(ev.rec.n).padStart(3)} ${ev.rec.symbol.padEnd(12)} ${(ev.rec.transition ?? '').padEnd(24)} T${ev.rec.temperature.toFixed(2)}${ev.rec.escaping ? '!' : ' '} ${ev.rec.keyEstimate.padEnd(9)} lh ${ev.rec.voicing.bass} ${ev.rec.voicing.lh.join(' ')} rh ${ev.rec.voicing.rh.join(' ')}   root[${top(ev.rec.steps[0])}] quality[${top(ev.rec.steps[1])}]`)
 }
 const stats = streamStats(recs)
 console.log(JSON.stringify(stats))
