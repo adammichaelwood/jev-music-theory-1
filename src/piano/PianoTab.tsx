@@ -89,6 +89,12 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
 
   return (
     <main className="pianotab">
+      <details className="about">
+        <summary>What is this?</summary>
+        <p><b>Jev improvising chords.</b> Every few seconds it makes three decisions in a row — a root, a quality (from 18 jazz chord types), and which chord tone goes in the bass — each one a multiple-choice question whose only context is the one-sentence "vibe" above and the list of chords it has played so far. Code then voices the chord (bass, two left-hand tones, four right-hand tones, each voice moving to its nearest new tone), arpeggiates it, and plays it through a Rhodes sample. The rows below show Jev's probability for every option at each step.</p>
+        <p><b>Scientific value: modest at best.</b> There is no right answer to grade against, so all we can measure is the shape of what it plays: how often it moves by falling fifths, uses ii–V–I, changes key, or repeats itself. What it actually does is revealing in a small way. Left to its top choice it opens with a genuinely idiomatic ten or so chords and then finds a fixed point — the same chord forever, or two chords alternating — because a decision model with no memory beyond the chord list has no reason to leave a place it likes. Tell it in the vibe text that you like falling fifths and it will fall by fifths until it runs out of keys. So the demo runs on Jev's <i>distribution</i>, sharpened (the "adventure" slider), with a small escape hatch that raises the temperature when the last four roots look stuck. Neither is a musical hint; both are ways of hearing more of what it knows.</p>
+        <p>We built it because it was fun. Turn the hold up, dim the lights, disable the qualities you don't want to hear, and let it wander.</p>
+      </details>
       <div className="pianotop">
         <textarea value={vibe} onChange={e => setVibe(e.target.value)} rows={2} disabled={running} />
         <div className="pianoctl">

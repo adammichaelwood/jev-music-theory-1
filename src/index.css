@@ -147,3 +147,5 @@ main.pianotab { display: block; max-width: 1100px; margin: 0 auto; padding: 16px
 .pianoctl select { font: inherit; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
 .pianoctl { flex-wrap: wrap; }
 .pianoctl .status { flex-basis: 100%; margin-left: 0; }
+.navsep { display: inline-block; width: 1px; height: 18px; background: var(--line); margin: 0 6px; vertical-align: middle; }
+main.pianotab .about { margin-bottom: 12px; }

@@ -128,7 +128,7 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Jev Chorale Lab</h1>
-        <nav><button className={tab === 'lab' ? 'on' : ''} onClick={() => setTab('lab')}>lab</button><button className={tab === 'piano' ? 'on' : ''} onClick={() => setTab('piano')}>piano</button><button className={tab === 'findings' ? 'on' : ''} onClick={() => setTab('findings')}>findings</button></nav>
+        <nav><button className={tab === 'lab' ? 'on' : ''} onClick={() => setTab('lab')}>lab</button><button className={tab === 'findings' ? 'on' : ''} onClick={() => setTab('findings')}>findings</button><span className="navsep" /><button className={tab === 'piano' ? 'on' : ''} onClick={() => setTab('piano')}>piano</button></nav>
         {tab === 'piano' && <span className="tagline">Jev improvises: root → quality → bass, three decisions per chord, voiced and played by code</span>}
         {tab === 'lab' && <>
           <select value={ex.id} onChange={e => loadExercise(EXERCISES.find(x => x.id === e.target.value)!)}>
