@@ -15,6 +15,7 @@ import { Controller } from './ui/Controller.tsx'
 import { GradePanel } from './ui/GradePanel.tsx'
 import { Markdown } from './ui/Markdown.tsx'
 import { TurnLog } from './ui/TurnLog.tsx'
+import { PianoTab } from './piano/PianoTab.tsx'
 import findingsMd from '../_plan/findings.md?raw'
 import type abcjs from 'abcjs'
 
@@ -35,7 +36,7 @@ export default function App() {
   const [lastStep, setLastStep] = useState<StepRecord | undefined>()
   const [live, setLive] = useState<Highlight[]>([])
   const [error, setError] = useState<string>()
-  const [tab, setTab] = useState<'lab' | 'findings'>('lab')
+  const [tab, setTab] = useState<'lab' | 'piano' | 'findings'>('lab')
   const [advanced, setAdvanced] = useState(false)
   const [stats, setStats] = useState({ requests: 0, tokens: 0, ms: 0, cost: 0 })
   const [apiKey, setApiKey] = useState<string | null>(userApiKey())
@@ -127,7 +128,8 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Jev Chorale Lab</h1>
-        <nav><button className={tab === 'lab' ? 'on' : ''} onClick={() => setTab('lab')}>lab</button><button className={tab === 'findings' ? 'on' : ''} onClick={() => setTab('findings')}>findings</button></nav>
+        <nav><button className={tab === 'lab' ? 'on' : ''} onClick={() => setTab('lab')}>lab</button><button className={tab === 'piano' ? 'on' : ''} onClick={() => setTab('piano')}>piano</button><button className={tab === 'findings' ? 'on' : ''} onClick={() => setTab('findings')}>findings</button></nav>
+        {tab === 'piano' && <span className="tagline">Jev improvises: root → quality → bass, three decisions per chord, voiced and played by code</span>}
         {tab === 'lab' && <>
           <select value={ex.id} onChange={e => loadExercise(EXERCISES.find(x => x.id === e.target.value)!)}>
             {EXERCISES.map(e => <option key={e.id} value={e.id}>{e.id.slice(0, 3)} · {e.title} (level {e.difficulty})</option>)}
@@ -180,7 +182,7 @@ export default function App() {
         </div>
       )}
 
-      {tab === 'findings' ? (
+      {tab === 'piano' ? <PianoTab apiKeyVersion={apiKey ? 1 : 0} /> : tab === 'findings' ? (
         <main className="findings"><Markdown text={findingsMd} /></main>
       ) : (
         <main>

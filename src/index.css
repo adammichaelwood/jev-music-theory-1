@@ -115,3 +115,26 @@ main.findings { display: block; max-width: 880px; margin: 0 auto; padding: 16px 
 .keybar { align-items: center; }
 .keybar input { font: inherit; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; width: 320px; font-family: 'JetBrains Mono', monospace; }
 .keybar span { max-width: 520px; line-height: 1.4; }
+/* piano tab */
+.tagline { color: var(--muted); font-size: 12px; margin-left: 8px; }
+main.pianotab { display: block; max-width: 1100px; margin: 0 auto; padding: 16px 20px 40px; }
+.pianotop textarea { width: 100%; font: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
+.pianoctl { display: flex; align-items: center; gap: 12px; margin: 8px 0 14px; }
+.pianoctl label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.nowplaying { text-align: center; margin: 6px 0 10px; }
+.bigchord { font-size: 64px; font-weight: 700; letter-spacing: -.02em; color: var(--jev2); text-shadow: 0 0 30px rgba(79,140,255,.35); line-height: 1.1; }
+.chordmeta { color: var(--muted); margin-top: 4px; } .chordmeta b { color: var(--text); }
+.deciding { color: var(--hot); font-size: 13px; min-height: 18px; margin-top: 4px; }
+.keyboard { width: 100%; height: 130px; display: block; margin: 8px 0 16px; }
+.wkey { fill: #eef1f7; stroke: #b9c0d0; stroke-width: .08; transition: fill .2s; } .wkey.upper { fill: var(--jev); } .wkey.bass { fill: var(--hot); }
+.bkey { fill: #1b1f2a; stroke: #05070a; stroke-width: .08; transition: fill .2s; } .bkey.upper { fill: var(--jev2); } .bkey.bass { fill: var(--hot); }
+.steps3 { display: flex; flex-direction: column; gap: 10px; }
+.steprow { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; transition: border-color .2s; }
+.steprow.active { border-color: var(--jev); box-shadow: 0 0 14px rgba(79,140,255,.25); }
+.steprow .steptitle { font-size: 10px; letter-spacing: .14em; color: var(--muted); margin-bottom: 6px; }
+.steprow .opt { min-width: 64px; padding: 5px 8px; font-size: 12px; }
+.history { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 8px; }
+.hchip { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; display: flex; flex-direction: column; min-width: 56px; }
+.hchip b { font-size: 13px; } .hchip i { font-style: normal; font-size: 9px; color: var(--muted); }
+.hchip.rep { border-color: var(--hot); }
+.pianostats { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); line-height: 1.6; }

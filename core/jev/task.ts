@@ -5,3 +5,4 @@ export const TASK_HISTORY = ' `recent_moves` lists the notes you wrote most rece
 export const APP_HEADER = 'x-jev-lab' // sent by the app; the Worker requires it
 export const APP_VERSION = '1'
 export const MODELS = ['jev-1.13.0', 'jev-latest']
+export const PIANO_TASK = 'You are improvising a solo piano piece one chord at a time. Each chord is chosen in three steps: its root, then its quality, then which chord tone goes in the bass. `played` lists the chords so far, oldest first. Choose the next chord to continue the music described in `vibe`.'

@@ -1,12 +1,13 @@
 // Does this request body look like one this app would send? Returns null if OK, else a reason.
 // Only the app's own prompt shapes pass, so the site key can't be borrowed as a general TypeSafe relay.
-import { MODELS, TASK } from '@core/jev/task.ts'
+import { MODELS, PIANO_TASK, TASK } from '@core/jev/task.ts'
 
 const KEY_RES = [
   /^(SOPRANO|ALTO|TENOR|BASS|STOP)$/,
   /^MEASURE \d{1,2}$/,
   /^(BEAT|AND OF) \d{1,2}$/,
-  /^[A-G](-SHARP|-FLAT|♯|♭)?(-[2-6])?$/, // pitch, or merged pitch-octave
+  /^[A-G](-SHARP|-FLAT|-DOUBLE-SHARP|-DOUBLE-FLAT|♯|♭)?(-[2-6])?$/, // pitch, merged pitch-octave, chord root or bass tone
+  /^(maj7|6|6\/9|maj9|maj7#11|m7|m6|m9|mMaj7|7|9|13|7b9|7#11|7alt|7sus4|m7b5|dim7)$/, // chord qualities (piano)
   /^OCTAVE [2-6]$/,
   /^(WHOLE|DOTTED-HALF|HALF|DOTTED-QUARTER|QUARTER|EIGHTH|SIXTEENTH)$/,
 ]
@@ -20,10 +21,17 @@ export function checkShape(raw: string): string | null {
   if (body.model !== undefined && !MODELS.includes(String(body.model))) return 'unexpected model'
   const st = body.state
   if (!isObj(st)) return 'state must be an object'
-  if (typeof st.task !== 'string' || !st.task.startsWith(TASK)) return 'unexpected task'
-  if (typeof st.score !== 'string' || st.score.length > 8_000) return 'unexpected score'
-  if (!isObj(st.exercise) || typeof st.exercise.key !== 'string') return 'unexpected exercise'
-  const allowedState = new Set(['task', 'format_guide', 'theory_rules', 'exercise', 'score', 'score_window', 'recent_moves', 'feedback', 'current_turn'])
+  if (typeof st.task !== 'string') return 'unexpected task'
+  const piano = st.task === PIANO_TASK
+  if (!piano && !st.task.startsWith(TASK)) return 'unexpected task'
+  if (piano) {
+    if (typeof st.vibe !== 'string' || st.vibe.length > 1_000) return 'unexpected vibe'
+    if (!Array.isArray(st.played) || st.played.length > 64) return 'unexpected played'
+  } else {
+    if (st.score !== undefined && (typeof st.score !== 'string' || st.score.length > 8_000)) return 'unexpected score'
+    if (!isObj(st.exercise) || typeof st.exercise.key !== 'string') return 'unexpected exercise'
+  }
+  const allowedState = new Set(piano ? ['task', 'vibe', 'played', 'chords_so_far', 'current'] : ['task', 'format_guide', 'theory_rules', 'exercise', 'score', 'score_window', 'context', 'situation', 'recent_moves', 'feedback', 'current_turn'])
   for (const k of Object.keys(st)) if (!allowedState.has(k)) return `unexpected state field ${k}`
   const qs = body.questions
   if (!isObj(qs)) return 'questions must be an object'
