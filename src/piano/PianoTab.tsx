@@ -16,6 +16,7 @@ const INSTRUMENTS: [number, string][] = [[4, 'electric piano (Rhodes)'], [5, 'el
 function playChord(v: Voicing, instrument: number, holdMs: number, gapMs: number) {
   audioContext()
   const order = [v.bass, ...v.lh, ...v.rh]
+  ;((window as unknown as { __jevPiano?: unknown[] }).__jevPiano ??= []).push({ t: Date.now(), notes: order, instrument, holdMs, gapMs }) // timing log (scripts/record-piano.ts)
   const MS_PER_MEASURE = 2000
   const total = holdMs + gapMs * order.length + 800
   const seq = new abcjs.synth.SynthSequence() as abcjs.SynthSequenceClass & { starts: number[] }
