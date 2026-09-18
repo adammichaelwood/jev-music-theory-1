@@ -1,4 +1,4 @@
-// Headless: npx tsx experiments/piano/run.ts [--n 60] [--decider jev] [--vibe "..."]
+// Headless: npx tsx experiments/piano/run.ts [--n 60] [--decider jev] [--vibe "..."] [--sample] [--repeats-ok]
 import 'dotenv/config'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { deciderByName } from '@core/decide/index.ts'
@@ -8,7 +8,7 @@ const opt = (k: string, d: string) => { const i = args.indexOf(`--${k}`); return
 const n = +opt('n', '40'), vibe = opt('vibe', DEFAULT_VIBE)
 const d = await deciderByName(opt('decider', 'jev'))
 const recs: ChordRecord[] = []
-for await (const ev of pianoLoop(d, { vibe, maxChords: n })) {
+for await (const ev of pianoLoop(d, { vibe, maxChords: n, sample: args.includes('--sample'), temperature: +opt('temp', '0.5'), noRepeat: !args.includes('--repeats-ok') })) {
   if (ev.type !== 'chord') continue
   recs.push(ev.rec)
   const top = (s: typeof ev.rec.steps[number]) => s.decision.probabilities ? Object.entries(s.decision.probabilities).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, p]) => `${k} ${(p * 100).toFixed(0)}%`).join(', ') : `${s.decision.choice} (conf ${s.decision.confidence?.toFixed(2)})`
@@ -17,4 +17,4 @@ for await (const ev of pianoLoop(d, { vibe, maxChords: n })) {
 const stats = streamStats(recs)
 console.log(JSON.stringify(stats))
 mkdirSync('runs', { recursive: true })
-appendFileSync('runs/piano.jsonl', JSON.stringify({ stamp: new Date().toISOString(), decider: d.name, model: d.model, vibe, chords: recs.map(r => r.symbol), stats }) + '\n')
+appendFileSync('runs/piano.jsonl', JSON.stringify({ stamp: new Date().toISOString(), decider: d.name, model: d.model, vibe, sample: args.includes('--sample'), noRepeat: !args.includes('--repeats-ok'), chords: recs.map(r => r.symbol), stats }) + '\n')

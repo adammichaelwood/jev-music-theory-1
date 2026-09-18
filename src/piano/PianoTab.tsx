@@ -18,6 +18,8 @@ function playChord(v: { bass: number; upper: number[] }, ms: number) {
 export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
   const [vibe, setVibe] = useState(DEFAULT_VIBE)
   const [hold, setHold] = useState(4)
+  const [noRepeat, setNoRepeat] = useState(true)
+  const [temp, setTemp] = useState(0.4) // 0 = always Jev's top choice
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string>()
   const [chords, setChords] = useState<ChordRecord[]>([])
@@ -34,7 +36,7 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
     setRunning(true); setError(undefined); setChords([]); setPartial({}); setStepRecs({}); setDeciding('root')
     let lastPlay = 0
     try {
-      const gen = pianoLoop(jevDecider(client), { vibe, signal: ac.signal })
+      const gen = pianoLoop(jevDecider(client), { vibe, signal: ac.signal, noRepeat, sample: temp > 0, temperature: temp })
       for (;;) {
         const { value: ev, done } = await gen.next()
         if (done || ac.signal.aborted) break
@@ -70,6 +72,8 @@ export function PianoTab({ apiKeyVersion }: { apiKeyVersion: number }) {
         <div className="pianoctl">
           {!running ? <button className="primary" onClick={start}>▶ play</button> : <button onClick={stop}>■ stop</button>}
           <label>hold <input type="range" min={2} max={10} step={0.5} value={hold} onChange={e => setHold(+e.target.value)} /> {hold}s</label>
+          <label title="withhold the previous chord's quality when the same root is chosen again"><input type="checkbox" checked={noRepeat} disabled={running} onChange={e => setNoRepeat(e.target.checked)} /> no identical repeats</label>
+          <label title="0 = always Jev's top choice; higher = sample from its probability distribution, sharpened less">adventure <input type="range" min={0} max={1} step={0.1} value={temp} onChange={e => setTemp(+e.target.value)} /> {temp === 0 ? 'top choice' : `T=${temp}`}</label>
           <span className="status">{running ? 'playing' : chords.length ? 'stopped' : 'idle'}{error ? ` — ${error}` : ''}{chords.length ? ` · ${chords.length} chords · $${stats.costUsd.toFixed(4)} · ${Math.round(stats.msPerChord)} ms/chord` : ''}</span>
         </div>
       </div>

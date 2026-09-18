@@ -8,7 +8,13 @@ export interface PianoStepRecord { step: PianoStep; options: Record<string, stri
 export interface ChordRecord { n: number; chord: Chord; symbol: string; voicing: Voicing; steps: PianoStepRecord[]; transition: string | null; keyEstimate: string; costUsd: number; ms: number }
 export type PianoEvent = { type: 'step'; n: number; rec: PianoStepRecord; partial: Partial<Chord> } | { type: 'chord'; rec: ChordRecord }
 
-export interface PianoOptions { vibe: string; historyLength?: number; maxChords?: number; signal?: AbortSignal }
+export interface PianoOptions {
+  vibe: string; historyLength?: number; maxChords?: number; signal?: AbortSignal
+  noRepeat?: boolean // forbid the identical chord twice in a row (the previous quality is withheld when the same root is chosen)
+  sample?: boolean // draw from Jev's probability distribution instead of taking the argmax
+  temperature?: number // sharpening when sampling: 1 = Jev's distribution as is, 0.3 = close to argmax with ties broken (default 0.5)
+  rng?: () => number
+}
 
 export const DEFAULT_VIBE = 'A slow, mellow late-night solo piano improvisation with rich jazz harmony. Let the harmony wander, surprise occasionally, and come home now and then.'
 
@@ -31,13 +37,17 @@ export async function* pianoLoop(decider: Decider, opts: PianoOptions): AsyncGen
       current: { ...(partial.root ? { root: rootKey(partial.root) } : {}), ...(partial.quality ? { quality: partial.quality } : {}) },
     })
     const ask = async (step: PianoStep, instructions: string, options: Record<string, string | null>) => {
-      const decision = await decider.decide(state(), instructions, options, { signal: opts.signal })
+      const d = await decider.decide(state(), instructions, options, { signal: opts.signal })
+      const decision = opts.sample && d.probabilities ? { ...d, choice: sampleFrom(d.probabilities, opts.rng ?? Math.random, opts.temperature ?? 0.5) } : d
       const rec = { step, options, decision }; steps.push(rec); return rec
     }
+    const last = played[played.length - 1]
     const r = await ask('root', Q_ROOT, Object.fromEntries(ROOTS.map(x => [rootKey(x), null])))
     partial.root = parseRootKey(r.decision.choice)
     yield { type: 'step', n, rec: r, partial: { ...partial } }
-    const q = await ask('quality', Q_QUALITY, Object.fromEntries(QUALITY_KEYS.map(k => [k, QUALITIES[k].describe])))
+    const sameRoot = last && rootKey(last.root) === rootKey(partial.root)
+    const qualityKeys = QUALITY_KEYS.filter(k => !(opts.noRepeat && sameRoot && k === last.quality))
+    const q = await ask('quality', Q_QUALITY, Object.fromEntries(qualityKeys.map(k => [k, QUALITIES[k].describe])))
     partial.quality = q.decision.choice
     yield { type: 'step', n, rec: q, partial: { ...partial } }
     const bo = bassOptions(partial.root, partial.quality)
@@ -50,6 +60,14 @@ export async function* pianoLoop(decider: Decider, opts: PianoOptions): AsyncGen
     played.push(chord); prevVoicing = voicing
     yield { type: 'chord', rec: { n, chord, symbol: chordSymbol(chord), voicing, steps, transition: prev ? classifyTransition(prev, chord) : null, keyEstimate: estimateKey(played), costUsd: steps.reduce((a, s) => a + s.decision.costUsd, 0), ms: steps.reduce((a, s) => a + s.decision.ms, 0) } }
   }
+}
+
+function sampleFrom(p: Record<string, number>, rnd: () => number, temperature = 0.5) {
+  const entries = Object.entries(p).map(([k, v]) => [k, Math.pow(Math.max(v, 1e-9), 1 / Math.max(temperature, 0.05))] as [string, number])
+  const total = entries.reduce((a, [, v]) => a + v, 0) || 1
+  let x = rnd() * total
+  for (const [k, v] of entries) { x -= v; if (x <= 0) return k }
+  return entries[entries.length - 1][0]
 }
 
 /** rolling statistics over a chord stream */
